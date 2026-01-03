@@ -3,8 +3,24 @@ import cv2
 import numpy as np
 from PIL import Image
 
-# Sayfa ayarları
+# Sayfa ayarları ve Sabit Kenar Çubuğu Stili
 st.set_page_config(page_title="Alan Lazer - Teklif Paneli", layout="wide")
+
+# CSS ile sol menüyü (sidebar) sabitleme ve elemanları sıkılaştırma
+st.markdown("""
+    <style>
+        [data-testid="stSidebar"] {
+            position: fixed;
+            height: 100vh;
+        }
+        [data-testid="stSidebar"] .block-container {
+            padding-top: 1rem;
+        }
+        .stNumberInput, .stSelectbox {
+            margin-bottom: -10px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # ==========================================
 # ADMIN AYARLARI (YALNIZCA BURADAN DEĞİŞTİRİLİR)
@@ -31,32 +47,34 @@ VERİ = {
     }
 }
 
-# --- SOL MENÜ (SIDEBAR) ---
+# --- SOL SABİT MENÜ (SIDEBAR) ---
 with st.sidebar:
-    # Logo sol üst köşede
     try:
         st.image("logo.png", use_container_width=True)
     except:
         st.subheader("ALAN LAZER")
     
-    st.header("Üretim Seçenekleri")
+    st.markdown("### Üretim Seçenekleri")
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     
-    # Plaka Seçimi
     plakalar = ["1500x6000", "1500x3000", "2500x1250", "1000x2000"]
     secilen_plaka = st.selectbox("Plaka Boyutu (mm)", plakalar)
     
-    adet = st.sidebar.number_input("Parça Adedi", min_value=1, value=1)
-    referans_olcu = st.sidebar.number_input("Çizimdeki Genişlik (mm)", value=3295)
+    adet = st.number_input("Parça Adedi", min_value=1, value=1)
+    referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295)
     
-    # Kesim Hızı Bilgi Alanı (Değiştirilemez)
+    # BİLGİLENDİRME ALANI
     st.markdown("---")
-    # Seçilen kalınlığa en yakın hızı bulma mantığı
     hiz_listesi = VERİ[metal]["hizlar"]
     guncel_hiz = hiz_listesi.get(kalinlik, min(hiz_listesi.values()))
-    st.info(f"**Sistem Kesim Hızı:**\n{guncel_hiz} mm/dk")
-    st.caption("Fiyatlandırma bu hız üzerinden otomatik hesaplanır.")
+    
+    # Bilgi Kutusu: Hız ve Maliyet bir arada
+    st.info(f"""
+    **Sistem Parametreleri:**
+    * Kesim Hızı: {guncel_hiz} mm/dk
+    * Birim Maliyet: {DK_UCRETI} TL/dk
+    """)
 
 # --- ANA EKRAN ---
 st.title("Alan Lazer Profesyonel Teklif Paneli")
@@ -115,8 +133,3 @@ if uploaded_file:
             c2.metric("Piercing Sayısı", f"{piercing_sayisi} Adet")
             c3.metric("Toplam Süre", f"{round(toplam_sure_dk, 1)} dk")
             c4.metric("TOPLAM TEKLİF", f"{round(isclik_bedeli + malzeme_bedeli, 2)} TL")
-            
-            with st.expander("Teknik Ayrıntılar"):
-                st.write(f"Birim Ağırlık: {round(agirlik, 2)} kg")
-                st.write(f"Kesim İşçilik Tutarı: {round(isclik_bedeli, 2)} TL")
-                st.write(f"Malzeme Tutarı: {round(malzeme_bedeli, 2)} TL")
