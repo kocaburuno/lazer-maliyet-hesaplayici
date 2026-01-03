@@ -10,6 +10,7 @@ DK_UCRETI = 25.0
 PIERCING_SURESI = 2.0  
 KG_UCRETI = 45.0       
 
+# Malzeme Listesi (Tam istediğiniz detaylı liste)
 VERİ = {
     "Siyah Sac": {
         "ozkutle": 7.85, 
@@ -28,10 +29,11 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR
+# 3. SIDEBAR (LOGO DÜZELTİLDİ)
 with st.sidebar:
+    # --- LOGO BURADA ---
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
-    st.divider()
+    st.markdown("---") # Ayırıcı çizgi
     
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
@@ -41,11 +43,12 @@ with st.sidebar:
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
     
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
-    referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=3295.39)
+    referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=3295.39, help="Çizimdeki parçanın en solundan en sağına olan gerçek ölçüyü giriniz.")
     
-    st.divider()
+    st.markdown("---")
     hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84)
     
+    # Hız Seçimi
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
@@ -60,7 +63,7 @@ uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'p
 if uploaded_file:
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     original_img = cv2.imdecode(file_bytes, 1)
-    h_img, w_img = original_img.shape[:2] # Resim boyutlarını al
+    h_img, w_img = original_img.shape[:2] 
     
     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(gray, hassasiyet, 255, cv2.THRESH_BINARY_INV)
@@ -69,24 +72,24 @@ if uploaded_file:
     if contours and hierarchy is not None:
         valid_contour_list = []
         
-        # --- KRİTİK DÜZELTME: DIŞ ÇERÇEVEYİ AYIKLAMA ---
+        # ÇERÇEVE FİLTRESİ (Dünkü düzeltme korundu)
         for i, cnt in enumerate(contours):
-            # Konturun sınır kutusunu al
             x, y, w, h = cv2.boundingRect(cnt)
             
-            # Eğer kontur resmin %98'inden fazlasını kaplıyorsa bu bir çerçevedir, atla!
+            # Eğer kontur resmin %98'inden büyükse bu dış çerçevedir, atla!
             if w > w_img * 0.98 and h > h_img * 0.98:
                 continue
             
-            # Sadece hiyerarşide parça olanları (yazı veya dış çerçeve olmayan) listeye ekle
+            # Hiyerarşi kontrolü
             if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                 valid_contour_list.append(cnt)
 
         if valid_contour_list:
-            # Sadece geçerli konturları birleştirerek gerçek bounding box'ı bul
+            # Sadece geçerli (parça) konturları birleştir
             all_pts = np.concatenate(valid_contour_list)
             x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
             
+            # Oranlama
             oran = referans_olcu / w_px
             gercek_genislik = w_px * oran
             gercek_yukseklik = h_px * oran
@@ -124,3 +127,4 @@ if uploaded_file:
                 with st.expander("🔍 Teknik Detaylar"):
                     st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
                     st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
+                    st.write(f"- Malzeme: {round(agirlik * adet * KG_UCRETI, 2)} TL")
