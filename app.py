@@ -28,7 +28,7 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR (Logo ve Genişlik Girişi)
+# 3. SIDEBAR
 with st.sidebar:
     st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
     st.divider()
@@ -41,9 +41,7 @@ with st.sidebar:
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
     
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
-    
-    # KRİTİK REVİZE: Kullanıcı parçanın en geniş yerini girer
-    referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=1000.0, help="Çizimdeki parçanın gerçek dünyadaki toplam genişliğini giriniz.")
+    referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=3295.39)
     
     st.divider()
     hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84)
@@ -62,59 +60,67 @@ uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'p
 if uploaded_file:
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     original_img = cv2.imdecode(file_bytes, 1)
+    h_img, w_img = original_img.shape[:2] # Resim boyutlarını al
+    
     gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(gray, hassasiyet, 255, cv2.THRESH_BINARY_INV)
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours and hierarchy is not None:
-        # REVİZE: Tüm konturları kapsayan en dış çerçeveyi bul
-        all_pts = np.concatenate(contours)
-        x, y, w_px, h_px = cv2.boundingRect(all_pts)
+        valid_contour_list = []
         
-        # Oranlama: Kullanıcının girdiği mm / Resimdeki piksel genişliği
-        oran = referans_olcu / w_px
-        gercek_genislik = w_px * oran  # Bu zaten girdiğiniz referans ölçüye eşit olacak
-        gercek_yukseklik = h_px * oran
-        
-        # Plaka Kontrolü
-        p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
-        g_max, g_min = max(gercek_genislik, gercek_yukseklik), min(gercek_genislik, gercek_yukseklik)
-        
-        if g_max > p_max or g_min > p_min:
-            st.error(f"⚠️ HATA: Parça ({round(gercek_genislik)}x{round(gercek_yukseklik)}mm), {secilen_plaka_adi} plakaya sığmıyor!")
-        else:
-            gecerli_konturlar = []
-            toplam_yol_piksel = 0
-            for i, cnt in enumerate(contours):
-                # Sadece gerçek kesim hatlarını (hiyerarşiye göre) al
-                if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
-                    cevre = cv2.arcLength(cnt, True)
-                    if cevre * oran > 5.0: # Çok küçük gürültüleri ele
-                        gecerli_konturlar.append(cnt)
-                        toplam_yol_piksel += cevre
+        # --- KRİTİK DÜZELTME: DIŞ ÇERÇEVEYİ AYIKLAMA ---
+        for i, cnt in enumerate(contours):
+            # Konturun sınır kutusunu al
+            x, y, w, h = cv2.boundingRect(cnt)
             
-            # Görselleştirme
-            display_img = original_img.copy()
-            cv2.drawContours(display_img, gecerli_konturlar, -1, (0, 255, 0), 2)
-            rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
-            st.image(rgb_img, caption="Tespit Edilen Kesim Yolları", use_container_width=True)
-
-            # Hesaplamalar
-            piercing_basi = len(gecerli_konturlar)
-            kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
-            sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
-            agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-            toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
-
-            # Özet Metrikler
-            st.subheader("📋 Teklif Özeti")
-            m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
-            m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
-            m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
-            m3.metric("Piercing", f"{piercing_basi * adet} ad")
-            m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+            # Eğer kontur resmin %98'inden fazlasını kaplıyorsa bu bir çerçevedir, atla!
+            if w > w_img * 0.98 and h > h_img * 0.98:
+                continue
             
-            with st.expander("🔍 Teknik Detaylar"):
-                st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
-                st.write(f"- Kesim Hızı: {guncel_hiz} mm/dk")
-                st.write(f"- İşçilik Payı: {round(sure_dk * DK_UCRETI, 2)} TL")
+            # Sadece hiyerarşide parça olanları (yazı veya dış çerçeve olmayan) listeye ekle
+            if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
+                valid_contour_list.append(cnt)
+
+        if valid_contour_list:
+            # Sadece geçerli konturları birleştirerek gerçek bounding box'ı bul
+            all_pts = np.concatenate(valid_contour_list)
+            x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
+            
+            oran = referans_olcu / w_px
+            gercek_genislik = w_px * oran
+            gercek_yukseklik = h_px * oran
+            
+            # Plaka Kontrolü
+            p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
+            g_max, g_min = max(gercek_genislik, gercek_yukseklik), min(gercek_genislik, gercek_yukseklik)
+            
+            if g_max > p_max or g_min > p_min:
+                st.error(f"⚠️ HATA: Parça ({round(gercek_genislik)}x{round(gercek_yukseklik)}mm), seçilen plakaya sığmıyor!")
+            else:
+                toplam_yol_piksel = sum([cv2.arcLength(c, True) for c in valid_contour_list])
+                
+                # Görselleştirme
+                display_img = original_img.copy()
+                cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
+                rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
+                st.image(rgb_img, caption="Analiz Edilen Parça (Çerçeve Temizlendi)", use_container_width=True)
+
+                # Hesaplamalar
+                piercing_basi = len(valid_contour_list)
+                kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
+                sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+                agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+                toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
+
+                # Özet Metrikler
+                st.subheader("📋 Teklif Özeti")
+                m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
+                m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
+                m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
+                m3.metric("Piercing", f"{piercing_basi * adet} ad")
+                m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+                
+                with st.expander("🔍 Teknik Detaylar"):
+                    st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
+                    st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
