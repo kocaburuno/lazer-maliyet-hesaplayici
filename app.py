@@ -3,13 +3,14 @@ import cv2
 import numpy as np
 
 # 1. SAYFA YAPILANDIRMASI
-st.set_page_config(page_title="Teklif Paneli", layout="wide")
+st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide")
 
-# 2. ÜRETİM PARAMETRELERİ (Sadece sizin verdiğiniz ilk değerler)
+# 2. ÜRETİM VE FİYAT PARAMETRELERİ (Orijinal Verileriniz)
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
 KG_UCRETI = 45.0       
 
+# Sizin ilk verdiğiniz malzeme ve hız tablosu
 VERİ = {
     "Siyah Sac": {
         "ozkutle": 7.85, 
@@ -28,7 +29,7 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR (Seçenekler)
+# 3. SIDEBAR (Seçenekler ve Tablolar)
 with st.sidebar:
     st.title("ALAN LAZER")
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
@@ -38,26 +39,34 @@ with st.sidebar:
     referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295.39)
     
     st.divider()
-    # Piercing sayısını düzeltmek için hassasiyet ayarı
+    # Piercing hassasiyeti (Izgara temizleme için)
     hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 180)
     
+    # Kesim Hızı Belirleme
     hiz_listesi = VERİ[metal]["hizlar"]
     guncel_hiz = hiz_listesi.get(kalinlik, min(hiz_listesi.values()))
+    
+    st.divider()
+    # Kaybolan Birim Fiyat Tablosu (Sidebar'da gösterim)
+    st.subheader("Birim Fiyatlar")
+    st.write(f"Dakika Ücreti: **{DK_UCRETI} TL**")
+    st.write(f"KG Ücreti: **{KG_UCRETI} TL**")
+    st.write(f"Piercing Süresi: **{PIERCING_SURESI} sn**")
 
 # 4. ANA PANEL
-st.title("Profesyonel Teklif Paneli")
+st.title("Profesyonel Kesim Analiz Paneli")
 uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
 
 if uploaded_file:
-    # Görüntüyü oku ve işle
+    # Görüntü İşleme
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Eşikleme ve gürültü temizleme (Sizin belirlediğiniz hassasiyetle)
+    # Seçilen hassasiyete göre siyah-beyaz çevrim
     _, binary = cv2.threshold(gray, hassasiyet, 255, cv2.THRESH_BINARY_INV)
     
-    # Hiyerarşik kontur tespiti
+    # Kontur Tespiti
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours and hierarchy is not None:
@@ -69,28 +78,44 @@ if uploaded_file:
         toplam_yol_piksel = 0
 
         for i, cnt in enumerate(contours):
-            # Sadece kapalı odaları sayan hiyerarşi filtresi
+            # Hiyerarşi Filtresi (Çizgi kalınlığını tek piercing sayar)
             if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                 cevre = cv2.arcLength(cnt, True)
-                if cevre * oran > 10.0: # Küçük noktaları ele
+                if cevre * oran > 10.0:
                     gecerli_konturlar.append(cnt)
                     toplam_yol_piksel += cevre
         
-        # Analitikler
-        piercing_sayisi = len(gecerli_konturlar)
-        kesim_m = (toplam_yol_piksel * oran) / 1000
-        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * PIERCING_SURESI / 60)
+        # HESAPLAMALAR
+        piercing_basi = len(gecerli_konturlar)
+        kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
+        
+        # Süre ve Maliyet Hesabı
+        sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
         agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-        fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
+        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
 
-        # GÖRSEL ÇIKTI: Parça burada görünecek
+        # GÖRSEL SONUÇ
         output_img = img.copy()
         cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 2)
-        st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), use_container_width=True)
+        st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), caption="Analiz Edilen Parça", use_container_width=True)
         
-        # SONUÇ TABLOSU
+        # ANALİZ TABLOSU
+        st.subheader("📋 Kesim Analizi ve Teklif")
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Toplam Kesim", f"{round(kesim_m * adet, 2)} m")
-        c2.metric("Piercing Adedi", f"{piercing_sayisi * adet}")
+        c1.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
+        c2.metric("Piercing Adedi", f"{piercing_basi * adet}")
         c3.metric("Tahmini Süre", f"{round(sure_dk, 1)} dk")
-        c4.metric("TOPLAM FİYAT", f"{round(fiyat, 2)} TL")
+        c4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+        
+        # Alt Detay Tablosu (Hız ve Kesim Detayları)
+        st.divider()
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("### Kesim Detayları")
+            st.write(f"- Seçilen Malzeme: **{metal} {kalinlik}mm**")
+            st.write(f"- Kesim Hızı: **{guncel_hiz} mm/dk**")
+            st.write(f"- Toplam Ağırlık: **{round(agirlik * adet, 2)} kg**")
+        with col2:
+            st.write("### Maliyet Dağılımı")
+            st.write(f"- İşçilik Maliyeti: **{round(sure_dk * DK_UCRETI, 2)} TL**")
+            st.write(f"- Malzeme Maliyeti: **{round(agirlik * adet * KG_UCRETI, 2)} TL**")
