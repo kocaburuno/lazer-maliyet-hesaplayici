@@ -5,7 +5,7 @@ import numpy as np
 # 1. SAYFA YAPILANDIRMASI
 st.set_page_config(page_title="Teklif Paneli", layout="wide")
 
-# 2. MALZEME VERİLERİ (Tüm Kalınlıklar Geri Geldi)
+# 2. MALZEME VERİLERİ (Genişletilmiş Standart Liste)
 VERİ = {
     "Siyah Sac": {
         "ozkutle": 7.85, 
@@ -39,8 +39,7 @@ with st.sidebar:
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
     referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295.0)
     
-    hizlar = VERİ[metal]["hizlar"]
-    guncel_hiz = hizlar.get(kalinlik, min(hizlar.values()))
+    guncel_hiz = VERİ[metal]["hizlar"].get(kalinlik, min(VERİ[metal]["hizlar"].values()))
 
 # 4. ANA PANEL
 st.title("Profesyonel Teklif Paneli")
@@ -51,12 +50,12 @@ if uploaded_file:
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Eşikleme (Siyah-Beyaz Dönüşümü)
-    # Fotoğraftaki her detayı yakalamak için threshold değerini 200'e çektik
-    _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+    # Adaptif eşikleme: Işık farklarını yok eder ve tüm konturları belirginleştirir
+    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                   cv2.THRESH_BINARY_INV, 11, 2)
     
-    # Hiyerarşik Kontur Tespiti (RETR_TREE: Tüm iç içe yapıları bulur)
-    contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # Konturları hiyerarşik bul
+    contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours and hierarchy is not None:
         main_contour = max(contours, key=cv2.contourArea)
@@ -65,40 +64,36 @@ if uploaded_file:
         
         gecerli_konturlar = []
         toplam_yol_piksel = 0
-        
-        # --- TÜM KONTURLARI BULAN MANTIK ---
+
         for i, cnt in enumerate(contours):
-            # En dış çerçeve veya hemen bir altındaki delikler (piercing noktaları)
-            # hierarchy[0][i][3] değeri üst seviyeyi belirtir.
-            if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
-                # Çok küçük tozları elemek için çok düşük bir eşik (min 1mm çevre)
-                if cv2.arcLength(cnt, True) * oran > 1.0:
+            # Hiyerarşi Kontrolü: 
+            # hierarchy[0][i][3] == -1 -> En dış çerçeve
+            # hierarchy[0][i][3] != -1 -> İç delikler (Sadece ilk seviye çocukları alarak çift saymayı önler)
+            # hierarchy[0][i][3] == 0  -> En dış çerçevenin hemen içindeki delikler
+            parent_idx = hierarchy[0][i][3]
+            
+            if parent_idx == -1 or parent_idx == 0:
+                cevre = cv2.arcLength(cnt, True)
+                if cevre * oran > 2.0: # 2mm'den küçük pikselleri ele (nokta hatası)
                     gecerli_konturlar.append(cnt)
-                    toplam_yol_piksel += cv2.arcLength(cnt, True)
+                    toplam_yol_piksel += cevre
         
-        # Analitik Sonuçlar
+        # Sonuçlar
         piercing_basi = len(gecerli_konturlar)
-        piercing_toplam = piercing_basi * adet
         kesim_m = (toplam_yol_piksel * oran) / 1000
-        
-        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_toplam * PIERCING_SURESI / 60)
+        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
         agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
         fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
 
-        # GÖRSELLEŞTİRME: İnce Yeşil Çizgi ile Tüm Konturlar
+        # Görselleştirme: TÜM KONTURLAR YEŞİL
         output_img = img.copy()
-        cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 1)
+        cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 2)
         st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), use_container_width=True)
         
-        # ÖZET TABLOSU
+        # Özet Tablosu
         st.subheader("📋 Kesim Analizi ve Teklif")
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Toplam Kesim", f"{round(kesim_m, 1)} m")
-        c2.metric("Piercing Adedi", f"{piercing_toplam}")
+        c1.metric("Toplam Kesim", f"{round(kesim_m * adet, 1)} m")
+        c2.metric("Piercing Adedi", f"{piercing_basi * adet}")
         c3.metric("Tahmini Süre", f"{round(sure_dk, 1)} dk")
         c4.metric("TOPLAM FİYAT", f"{round(fiyat, 2)} TL")
-        
-        with st.expander("Maliyet Detayları & Sac Bilgileri"):
-            st.write(f"**Seçilen Malzeme:** {metal} {kalinlik}mm")
-            st.write(f"**Birim Başına Piercing:** {piercing_basi} (48 iç + 1 dış)")
-            st.write(f"**Net Ağırlık:** {round(agirlik, 2)} kg")
