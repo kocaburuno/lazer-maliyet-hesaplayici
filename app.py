@@ -8,29 +8,18 @@ st.set_page_config(page_title="Alan Lazer - Teklif Paneli", layout="wide")
 # --- STABİL ARAYÜZ CSS ---
 st.markdown("""
     <style>
-        /* Sidebar içeriğini ve logoyu sabitle */
-        [data-testid="stSidebar"] .block-container {
-            padding-top: 1rem !important;
-        }
-        /* Sidebar elemanlarını sıkıştır */
-        .stSelectbox, .stNumberInput {
-            margin-bottom: -10px !important;
-        }
-        /* Mavi bilgi kutusu stili */
-        .stAlert {
-            padding: 0.8rem !important;
-            margin-top: 10px !important;
-            border: 1px solid #d1d5db !important;
-        }
+        [data-testid="stSidebar"] .block-container { padding-top: 1rem !important; }
+        .stSelectbox, .stNumberInput { margin-bottom: -10px !important; }
+        .stAlert { padding: 0.8rem !important; margin-top: 10px !important; border: 1px solid #d1d5db !important; }
         h1 { color: #1e3a8a; }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# ADMIN AYARLARI (Buradan güncelleyebilirsin)
+# ADMIN AYARLARI
 # ==========================================
 DK_UCRETI = 25.0       
-PIERCING_SURESI = 2.0  # Saniye
+PIERCING_SURESI = 2.0  
 KG_UCRETI = 45.0       
 
 VERİ = {
@@ -69,7 +58,6 @@ with st.sidebar:
     referans_olcu = st.number_input("Çizim Genişliği (mm)", value=3295)
     
     st.markdown("---")
-    # Dinamik Hız Seçimi
     hiz_tablosu = VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, min(hiz_tablosu.values()))
     
@@ -89,9 +77,12 @@ if uploaded_file:
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # Gürültü engelleme için yumuşatma
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     edged = cv2.Canny(blurred, 30, 150)
     
+    # Konturları bul (RETR_CCOMP hiyerarşisi ile iç ve dış konturları ayırmak için en iyisidir)
     contours, _ = cv2.findContours(edged, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours:
@@ -99,7 +90,6 @@ if uploaded_file:
         x, y, w, h = cv2.boundingRect(main_contour)
         oran = referans_olcu / w
         
-        # Parça boyutları
         p_en, p_boy = w * oran, h * oran
         
         # --- PLAKA SIĞMA KONTROLÜ ---
@@ -107,24 +97,28 @@ if uploaded_file:
         sigiyor = (p_en <= pl_en_val and p_boy <= pl_boy_val) or (p_en <= pl_boy_val and p_boy <= pl_en_val)
         
         if not sigiyor:
-            st.error(f"❌ HATA: {round(p_en)}x{round(p_boy)} mm boyutundaki parça, seçilen {secilen_plaka} plakaya sığmıyor!")
+            st.error(f"❌ HATA: {round(p_en)}x{round(p_boy)} mm parça, {secilen_plaka} plakaya sığmıyor!")
         else:
-            total_cevre_piksel = 0
-            gercek_delik_sayisi = 0
+            total_kesim_yolu_piksel = 0
+            kapali_kontur_sayisi = 0
             
+            # Filtre: 2mm (Piksel cinsinden oranla çarpıyoruz)
+            filtre_piksel = 2 / oran
+
             for cnt in contours:
-                c_length = cv2.arcLength(cnt, True)
-                # Küçük gürültüleri elemek için çevre uzunluğu filtresi (Hassas Piercing)
-                if c_length > 100: 
-                    total_cevre_piksel += c_length
-                    gercek_delik_sayisi += 1
+                c_length_piksel = cv2.arcLength(cnt, True)
+                # Sadece 2mm'den büyük kapalı konturları gerçek kesim/delik olarak kabul et
+                if c_length_piksel > filtre_piksel:
+                    total_kesim_yolu_piksel += c_length_piksel
+                    kapali_kontur_sayisi += 1
                     cv2.drawContours(img, [cnt], -1, (0, 255, 0), 2)
             
-            # Tekil parçadaki piercing (Dış çerçeve + İç delikler)
-            piercing_sayisi_toplam = int(gercek_delik_sayisi) * adet
-            toplam_kesim_yolu_mm = total_cevre_piksel * oran
+            # Piercing Hesabı: Her kapalı kontur 1 adet delmedir.
+            # (Adet ile çarpıyoruz)
+            piercing_sayisi_toplam = kapali_kontur_sayisi * adet
+            toplam_kesim_yolu_mm = total_kesim_yolu_piksel * oran
             
-            # --- MALİYET HESABI ---
+            # --- MALİYET VE SÜRE ---
             saf_kesim_suresi_dk = (toplam_kesim_yolu_mm / guncel_hiz) * adet
             piercing_ek_suresi_dk = (piercing_sayisi_toplam * PIERCING_SURESI) / 60
             toplam_sure_dk = saf_kesim_suresi_dk + piercing_ek_suresi_dk
@@ -136,7 +130,6 @@ if uploaded_file:
 
             st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), use_container_width=True)
 
-            # SONUÇLAR
             st.subheader("📋 Detaylı Fiyatlandırma")
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Toplam Kesim", f"{round(toplam_kesim_yolu_mm/1000, 1)} m")
@@ -145,7 +138,7 @@ if uploaded_file:
             c4.metric("TOPLAM TEKLİF", f"{round(isclik_bedeli + malzeme_bedeli, 2)} TL")
             
             with st.expander("Maliyet Detayları"):
+                st.write(f"Tespit Edilen Kontur (Delik+Çerçeve): {kapali_kontur_sayisi}")
                 st.write(f"Parça Boyutu: {round(p_en)} x {round(p_boy)} mm")
-                st.write(f"Birim Ağırlık: {round(agirlik, 2)} kg")
-                st.write(f"Kesim İşçilik: {round(isclik_bedeli, 2)} TL")
-                st.write(f"Malzeme Tutarı: {round(malzeme_bedeli, 2)} TL")
+                st.write(f"Toplam Ağırlık: {round(agirlik * adet, 2)} kg")
+                st.write(f"İşçilik: {round(isclik_bedeli, 2)} TL | Malzeme: {round(malzeme_bedeli, 2)} TL")
