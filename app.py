@@ -7,7 +7,7 @@ st.set_page_config(page_title="Alan Lazer - Teklif Paneli", layout="wide")
 
 # 2. ÜRETİM PARAMETRELERİ
 DK_UCRETI = 25.0       
-PIERCING_SURESI = 2.0  # Saniye
+PIERCING_SURESI = 2.0  
 KG_UCRETI = 45.0       
 
 VERİ = {
@@ -45,7 +45,7 @@ with st.sidebar:
     st.markdown("---")
     hiz_tablosu = VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, min(hiz_tablosu.values()))
-    st.info(f"**Sistem Bilgisi:**\n- Hız: {guncel_hiz} mm/dk\n- Dakika Ücreti: {DK_UCRETI} TL")
+    st.info(f"**Sistem Parametreleri:**\n- Hız: {guncel_hiz} mm/dk\n- İşçilik: {DK_UCRETI} TL/dk")
 
 # 4. ANA EKRAN VE ANALİZ
 st.title("Alan Lazer Profesyonel Teklif Paneli")
@@ -56,14 +56,14 @@ if uploaded_file:
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Kırmızı çiziminizdeki gibi net kapalı konturlar için eşikleme
+    # Görsel netleştirme (Yeşil çizgilerin doğruluğu için)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     _, thresh = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY_INV)
     
-    # Hiyerarşik kontur tespiti
+    # Hiyerarşik kontur tespiti (RETR_CCOMP: Sadece iç ve dış delikleri bulur)
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
-    if contours:
+    if contours and hierarchy is not None:
         main_contour = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(main_contour)
         oran = referans_olcu / w
@@ -74,45 +74,46 @@ if uploaded_file:
         if not ((p_en <= pl_en_v and p_boy <= pl_boy_v) or (p_en <= pl_boy_v and p_boy <= pl_en_v)):
             st.error(f"❌ HATA: {round(p_en)}x{round(p_boy)}mm parça {secilen_plaka} plakaya sığmıyor!")
         else:
-            # --- PIERCING ANALİZİ ---
+            # --- ANALİZ DÖNGÜSÜ ---
             gecerli_konturlar = []
             toplam_yol_piksel = 0
-            # 2mm altı gürültüleri elemek için çevre filtresi
-            cevre_filtresi_piksel = 2 / oran 
+            
+            # 5mm altındaki toz pürüzlerini piercing saymamak için filtre
+            min_cevre_piksel = 5 / oran 
 
             for i, cnt in enumerate(contours):
-                # Sadece kapalı ana döngüleri (hiyerarşide üst seviye) sayar
+                # hierarchy[0][i][3] == -1 -> En dış çerçeve
+                # hierarchy[0][i][3] == 0  -> Dış çerçevenin hemen içindeki delikler
                 if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                     cevre = cv2.arcLength(cnt, True)
-                    if cevre > cevre_filtresi_piksel:
+                    if cevre > min_cevre_piksel:
                         gecerli_konturlar.append(cnt)
                         toplam_yol_piksel += cevre
             
-            # Sonuçların Hesaplanması
-            piercing_sayisi = len(gecerli_konturlar) * adet
+            # Hesaplamalar
+            piercing_basi = len(gecerli_konturlar) # Hedef: 49
+            piercing_toplam = piercing_basi * adet
             kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
             
-            kesim_suresi_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet
-            piercing_suresi_dk = (piercing_sayisi * PIERCING_SURESI) / 60
-            toplam_sure_dk = kesim_suresi_dk + piercing_suresi_dk
-            
-            malzeme_agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-            toplam_fiyat = (toplam_sure_dk * DK_UCRETI) + (malzeme_agirlik * adet * KG_UCRETI)
+            sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_toplam * PIERCING_SURESI / 60)
+            agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+            toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
 
-            # Ekranda Gösterim
+            # YEŞİL KONTUR ÇİZİMİ (Belirginleştirilmiş)
             output_img = img.copy()
-            for cnt in gecerli_konturlar:
-                cv2.drawContours(output_img, [cnt], -1, (0, 255, 0), 2)
+            cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 3) # Kalınlık 3 yapıldı
+            
             st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), use_container_width=True)
             
+            # SONUÇLAR
             st.subheader("📋 Kesim Analizi ve Teklif")
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Toplam Kesim", f"{round(kesim_yolu_m, 1)} m")
-            c2.metric("Piercing (Patlatma)", f"{piercing_sayisi} Adet")
-            c3.metric("Toplam Süre", f"{round(toplam_sure_dk, 1)} dk")
+            c2.metric("Piercing Adedi", f"{piercing_toplam}")
+            c3.metric("Tahmini Süre", f"{round(sure_dk, 1)} dk")
             c4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
             
-            with st.expander("Detaylı Bilgiler"):
-                st.write(f"**Parça Ölçüsü:** {round(p_en)} x {round(p_boy)} mm")
-                st.write(f"**Tespit Edilen Kontur:** {len(gecerli_konturlar)} (48 iç + 1 dış)")
-                st.write(f"**Birim Ağırlık:** {round(malzeme_agirlik, 2)} kg")
+            with st.expander("Maliyet Detayları"):
+                st.write(f"**Parça Boyutu:** {round(p_en)} x {round(p_boy)} mm")
+                st.write(f"**Birim Piercing:** {piercing_basi} adet (1 Dış + {piercing_basi-1} İç)")
+                st.write(f"**Malzeme Ağırlığı:** {round(agirlik, 2)} kg")
