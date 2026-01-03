@@ -3,67 +3,91 @@ import cv2
 import numpy as np
 from PIL import Image
 
-st.set_page_config(page_title="Lazer Kesim Maliyet", layout="wide")
+st.set_page_config(page_title="Lazer Kesim Pro", layout="wide")
 
-# --- PARAMETRE TABLOSU (Burayı dilediğin gibi güncelleyebiliriz) ---
-# Malzeme: [Hız (mm/dk), Birim Fiyat (TL/kg)]
-PARAMETRELER = {
-    "Siyah Sac (2mm)": [3500, 45],
-    "Siyah Sac (5mm)": [1800, 45],
-    "Paslanmaz (2mm)": [4500, 120],
+# --- VERİ YAPISI ---
+VERİ = {
+    "Siyah Sac": {
+        "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20],
+        "hizlar": {0.8: 6000, 2: 3500, 5: 1800, 10: 800, 20: 300}, # Örnek hızlar
+        "ozkutle": 7.85 # gr/cm3
+    },
+    "Paslanmaz": {
+        "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10],
+        "hizlar": {0.8: 7000, 2: 4500, 5: 1200, 10: 500},
+        "ozkutle": 8.0
+    },
+    "Alüminyum": {
+        "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8],
+        "hizlar": {0.8: 8000, 2: 5000, 5: 1500, 8: 600},
+        "ozkutle": 2.7
+    }
 }
-MAKINE_SAAT_UCRETI = 1500 # TL
 
-st.title("✂️ Lazer Kesim Akıllı Maliyet Hesaplama")
+st.title("⚙️ Lazer Kesim Profesyonel Teklif Paneli")
 
-# Yan Menü
-st.sidebar.header("1. Üretim Ayarları")
-secim = st.sidebar.selectbox("Malzeme ve Kalınlık", list(PARAMETRELER.keys()))
+# --- YAN MENÜ: AKILLI SEÇİM ---
+st.sidebar.header("1. Malzeme ve Plaka")
+metal = st.sidebar.selectbox("Metal Türü", list(VERİ.keys()))
+kalinlik = st.sidebar.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
+
+# Plaka Ölçüleri Mantığı
+if metal == "Siyah Sac":
+    if kalinlik >= 2:
+        plakalar = ["1500x6000", "1500x3000", "2500x1250", "1000x2000"]
+    else:
+        plakalar = ["1500x3000", "1250x2500", "1000x2000"]
+else: # Paslanmaz ve Alüminyum
+    plakalar = ["1500x3000", "1220x2440", "1000x2000"]
+
+secilen_plaka = st.sidebar.selectbox("Plaka Boyutu (mm)", plakalar)
 adet = st.sidebar.number_input("Parça Adedi", min_value=1, value=1)
-referans_olcu = st.sidebar.number_input("Referans Ölçü (mm) - (Çizimdeki bilinen uzunluk)", value=100)
+referans_olcu = st.sidebar.number_input("Çizimdeki Genişlik (mm)", value=100)
 
-st.sidebar.header("2. Fiyatlandırma")
-st.sidebar.write(f"Kesim Hızı: {PARAMETRELER[secim][0]} mm/dk")
+# --- ANA EKRAN ---
+uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png'])
 
-# Dosya Yükleme
-uploaded_file = st.file_uploader("AutoCAD Ekran Görüntüsü Yükleyin", type=['jpg', 'jpeg', 'png'])
-
-if uploaded_file is not None:
-    # Görüntüyü işle
+if uploaded_file:
+    # Görüntü İşleme
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
-    # Kontur tespiti (Canny Edge Detection)
     edged = cv2.Canny(gray, 50, 150)
     contours, _ = cv2.findContours(edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # En büyük konturu bul (Parçanın kendisi)
     if contours:
-        main_contour = max(contours, key=cv2.contourArea)
-        # Çizim üzerine konturu çiz
-        cv2.drawContours(img, [main_contour], -1, (0, 255, 0), 3)
+        cnt = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(cnt)
         
-        # Basit Ölçü Mantığı: 
-        # (Şimdilik en geniş kısmı referans alıyoruz, bir sonraki adımda kullanıcıya seçtireceğiz)
-        x, y, w, h = cv2.boundingRect(main_contour)
-        piksel_oran = referans_olcu / w # Genişliği referans alıyoruz
+        # Matematiksel Hesaplar
+        oran = referans_olcu / w
+        parca_boy = h * oran
+        parca_en = w * oran
+        cevre = cv2.arcLength(cnt, True) * oran
+        alan = cv2.contourArea(cnt) * (oran**2)
         
-        cevre_piksel = cv2.arcLength(main_contour, True)
-        gerçek_cevre_mm = cevre_piksel * piksel_oran
+        # Hız ve Maliyet (Tablodaki en yakın kalınlığa göre hız seçimi)
+        hiz = VERİ[metal]["hizlar"].get(kalinlik, 1000) 
+        sure = (cevre / hiz) * adet
         
-        # Maliyet Hesaplama
-        kesim_suresi_dk = (gerçek_cevre_mm / PARAMETRELER[secim][0]) * adet
-        maliyet_tl = (kesim_suresi_dk / 60) * MAKINE_SAAT_UCRETI
+        # Basit Nesting Tahmini
+        p_en, p_boy = map(int, secilen_plaka.split('x'))
+        sigan_adet = (p_en // (parca_en + 5)) * (p_boy // (parca_boy + 5))
+        plaka_ihtiyac = int(np.ceil(adet / sigan_adet)) if sigan_adet > 0 else 1
 
-        # Görseli Göster
-        st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption='Tespit Edilen Konturlar (Yeşil)', use_column_width=True)
-
-        # Sonuçlar
-        st.subheader("📊 Analiz Sonuçları")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Parça Çevresi", f"{round(gerçek_cevre_mm, 2)} mm")
-        c2.metric("Toplam Kesim Süresi", f"{round(kesim_suresi_dk, 2)} dk")
-        c3.metric("Tahmini İşçilik Fiyatı", f"{round(maliyet_tl, 2)} TL")
+        # Ağırlık Hesabı
+        agirlik = (alan * kalinlik * VERİ[metal]["ozkutle"]) / 1000000 # kg
         
-        st.warning("Not: Malzeme ağırlık maliyeti ve nesting firesi şu an kaba hesaplanmaktadır.")
+        # Görüntüyü Göster
+        cv2.rectangle(img, (x,y), (x+w, y+h), (255,0,0), 2)
+        st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), use_column_width=True)
+
+        # SONUÇ TABLOSU
+        st.subheader("📋 Teknik Detaylar ve Teklif")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Parça Boyutu", f"{round(parca_en,1)}x{round(parca_boy,1)} mm")
+        col2.metric("Kesim Yolu", f"{round(cevre,1)} mm")
+        col3.metric("Birim Ağırlık", f"{round(agirlik,3)} kg")
+        col4.metric("Plaka Başına Adet", f"{int(sigan_adet)}")
+
+        st.success(f"**Sonuç:** {adet} parça için **{plaka_ihtiyac} adet** {secilen_plaka} plaka kullanılacak. Tahmini toplam kesim süresi: **{round(sure, 2)} dk**")
