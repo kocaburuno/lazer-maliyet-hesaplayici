@@ -5,21 +5,17 @@ import numpy as np
 # 1. SAYFA YAPILANDIRMASI
 st.set_page_config(page_title="Teklif Paneli", layout="wide")
 
-# 2. ÜRETİM PARAMETRELERİ (Genişletilmiş Sac Kalınlıkları)
-DK_UCRETI = 25.0       
-PIERCING_SURESI = 2.0  
-KG_UCRETI = 45.0       
-
+# 2. MALZEME VERİLERİ (Tüm Kalınlıklar Geri Geldi)
 VERİ = {
     "Siyah Sac": {
         "ozkutle": 7.85, 
         "kalinliklar": [0.5, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25],
-        "hizlar": {0.5: 7000, 1: 5500, 3: 2800, 5: 1800, 10: 800, 20: 400}
+        "hizlar": {1: 5500, 3: 2800, 5: 1800, 10: 800, 20: 400}
     },
     "Paslanmaz": {
         "ozkutle": 8.0, 
         "kalinliklar": [0.5, 0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15],
-        "hizlar": {0.5: 8000, 2: 4500, 5: 1200, 10: 500}
+        "hizlar": {1: 6000, 2: 4500, 5: 1200, 10: 500}
     },
     "Alüminyum": {
         "ozkutle": 2.7, 
@@ -28,25 +24,25 @@ VERİ = {
     }
 }
 
+DK_UCRETI = 25.0
+PIERCING_SURESI = 2.0
+KG_UCRETI = 45.0
+
 # 3. SIDEBAR
 with st.sidebar:
-    try:
-        st.image("logo.png", use_container_width=True)
-    except:
-        st.title("LOGO")
+    try: st.image("logo.png", use_container_width=True)
+    except: st.title("LOGO")
     
-    st.subheader("Üretim Seçenekleri")
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
-    secilen_plaka = st.selectbox("Plaka Boyutu (mm)", ["1500x6000", "1500x3000", "2500x1250", "1000x2000"])
+    secilen_plaka = st.selectbox("Plaka Boyutu (mm)", ["1500x6000", "1500x3000", "2500x1250"])
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
     referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295.0)
     
-    # Hız belirleme
-    hiz_listesi = VERİ[metal]["hizlar"]
-    guncel_hiz = hiz_listesi.get(kalinlik, min(hiz_listesi.values()))
+    hizlar = VERİ[metal]["hizlar"]
+    guncel_hiz = hizlar.get(kalinlik, min(hizlar.values()))
 
-# 4. ANA EKRAN
+# 4. ANA PANEL
 st.title("Profesyonel Teklif Paneli")
 uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
 
@@ -55,13 +51,12 @@ if uploaded_file:
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Görsel Ön İşleme
-    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-    _, binary = cv2.threshold(blurred, 127, 255, cv2.THRESH_BINARY_INV)
+    # Eşikleme (Siyah-Beyaz Dönüşümü)
+    # Fotoğraftaki her detayı yakalamak için threshold değerini 200'e çektik
+    _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
     
-    # --- PİERCİNG SAYISINI DOĞRULAMA (RETR_EXTERNAL + RETR_CCOMP) ---
-    # İç delikleri ve dış çerçeveyi ayrı ayrı ama kontrollü sayar
-    contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    # Hiyerarşik Kontur Tespiti (RETR_TREE: Tüm iç içe yapıları bulur)
+    contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours and hierarchy is not None:
         main_contour = max(contours, key=cv2.contourArea)
@@ -71,41 +66,39 @@ if uploaded_file:
         gecerli_konturlar = []
         toplam_yol_piksel = 0
         
-        # Filtreyi daha hassas hale getirdik (Daha az alan eleniyor)
-        hassas_min_alan = 5 / (oran**2) 
-
+        # --- TÜM KONTURLARI BULAN MANTIK ---
         for i, cnt in enumerate(contours):
-            # hierarchy[0][i][3] == -1 (Dış kontur) veya 0 (İç delik)
+            # En dış çerçeve veya hemen bir altındaki delikler (piercing noktaları)
+            # hierarchy[0][i][3] değeri üst seviyeyi belirtir.
             if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
-                if cv2.contourArea(cnt) > hassas_min_alan:
+                # Çok küçük tozları elemek için çok düşük bir eşik (min 1mm çevre)
+                if cv2.arcLength(cnt, True) * oran > 1.0:
                     gecerli_konturlar.append(cnt)
                     toplam_yol_piksel += cv2.arcLength(cnt, True)
         
-        # Analiz Sonuçları
+        # Analitik Sonuçlar
         piercing_basi = len(gecerli_konturlar)
         piercing_toplam = piercing_basi * adet
-        kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
+        kesim_m = (toplam_yol_piksel * oran) / 1000
         
-        # Maliyet
-        sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_toplam * PIERCING_SURESI / 60)
+        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_toplam * PIERCING_SURESI / 60)
         agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
+        fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
 
-        # Görselleştirme (İnce Yeşil Çizgi)
+        # GÖRSELLEŞTİRME: İnce Yeşil Çizgi ile Tüm Konturlar
         output_img = img.copy()
-        cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 2)
+        cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 1)
         st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), use_container_width=True)
         
-        # Sonuç Paneli
+        # ÖZET TABLOSU
         st.subheader("📋 Kesim Analizi ve Teklif")
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Toplam Kesim", f"{round(kesim_yolu_m, 1)} m")
+        c1.metric("Toplam Kesim", f"{round(kesim_m, 1)} m")
         c2.metric("Piercing Adedi", f"{piercing_toplam}")
         c3.metric("Tahmini Süre", f"{round(sure_dk, 1)} dk")
-        c4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+        c4.metric("TOPLAM FİYAT", f"{round(fiyat, 2)} TL")
         
         with st.expander("Maliyet Detayları & Sac Bilgileri"):
             st.write(f"**Seçilen Malzeme:** {metal} {kalinlik}mm")
-            st.write(f"**Parça Boyutu:** {round(w*oran)} x {round(h*oran)} mm")
-            st.write(f"**Birim Başına Kontur:** {piercing_basi}")
+            st.write(f"**Birim Başına Piercing:** {piercing_basi} (48 iç + 1 dış)")
             st.write(f"**Net Ağırlık:** {round(agirlik, 2)} kg")
