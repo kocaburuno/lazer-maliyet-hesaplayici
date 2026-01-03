@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 # 1. SAYFA YAPILANDIRMASI
-st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide")
+st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon="logo.png")
 
 # 2. ÜRETİM VE FİYAT PARAMETRELERİ (Sabit)
 DK_UCRETI = 25.0       
@@ -29,10 +29,15 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR (LOGO DÜZELTİLDİ)
+# 3. SIDEBAR (LOGO GÖRSELİ EKLENDİ)
 with st.sidebar:
-    # --- LOGO BURADA ---
-    st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
+    # --- LOGO BURADA (logo.png dosyası proje klasöründe olmalı) ---
+    try:
+        st.image("logo.png", use_column_width=True)
+    except:
+        st.error("'logo.png' bulunamadı.")
+        st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
+        
     st.markdown("---") # Ayırıcı çizgi
     
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
@@ -72,7 +77,7 @@ if uploaded_file:
     if contours and hierarchy is not None:
         valid_contour_list = []
         
-        # ÇERÇEVE FİLTRESİ (Dünkü düzeltme korundu)
+        # ÇERÇEVE FİLTRESİ
         for i, cnt in enumerate(contours):
             x, y, w, h = cv2.boundingRect(cnt)
             
