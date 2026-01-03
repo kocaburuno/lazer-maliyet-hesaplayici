@@ -5,7 +5,7 @@ import numpy as np
 # 1. SAYFA YAPILANDIRMASI
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide")
 
-# 2. ÜRETİM VE FİYAT PARAMETRELERİ
+# 2. ÜRETİM VE FİYAT PARAMETRELERİ (İlk verdiğiniz orijinal veriler)
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
 KG_UCRETI = 45.0       
@@ -33,7 +33,16 @@ with st.sidebar:
     st.title("ALAN LAZER")
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
-    secilen_plaka = st.selectbox("Plaka Boyutu (mm)", ["1500x6000", "1500x3000", "2500x1250"])
+    
+    # Plaka ebatları
+    plaka_secenekleri = {
+        "1500x6000": (1500, 6000),
+        "1500x3000": (1500, 3000),
+        "2500x1250": (2500, 1250)
+    }
+    secilen_plaka_adi = st.selectbox("Plaka Boyutu (mm)", list(plaka_secenekleri.keys()))
+    secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
+    
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
     referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295.39)
     
@@ -42,11 +51,6 @@ with st.sidebar:
     
     hiz_listesi = VERİ[metal]["hizlar"]
     guncel_hiz = hiz_listesi.get(kalinlik, min(hiz_listesi.values()))
-    
-    st.divider()
-    st.subheader("Birim Fiyatlar")
-    st.write(f"Dakika Ücreti: **{DK_UCRETI} TL**")
-    st.write(f"KG Ücreti: **{KG_UCRETI} TL**")
 
 # 4. ANA PANEL
 st.title("Profesyonel Kesim Analiz Paneli")
@@ -62,65 +66,65 @@ if uploaded_file:
     
     if contours and hierarchy is not None:
         main_contour = max(contours, key=cv2.contourArea)
-        
-        # BOYUT HESAPLAMA (Bounding Box)
-        # Parçanın piksel cinsinden genişlik (w) ve yüksekliği (h)
         x, y, w_px, h_px = cv2.boundingRect(main_contour)
         
-        # Oran: Kullanıcının girdiği mm / Piksel genişliği
+        # Oran ve Boyut Hesaplama
         oran = referans_olcu / w_px
+        gercek_genislik = w_px * oran
+        gercek_yukseklik = h_px * oran
         
-        # Gerçek mm boyutları
-        gercek_genislik_mm = w_px * oran
-        gercek_yukseklik_mm = h_px * oran
+        # --- PLAKA EBAT KONTROLÜ (MADDER 3) ---
+        # Parçanın herhangi bir boyutu plaka boyutundan büyükse hata ver
+        p_max = max(secilen_p_en, secilen_p_boy)
+        p_min = min(secilen_p_en, secilen_p_boy)
+        g_max = max(gercek_genislik, gercek_yukseklik)
+        g_min = min(gercek_genislik, gercek_yukseklik)
         
-        gecerli_konturlar = []
-        toplam_yol_piksel = 0
+        if g_max > p_max or g_min > p_min:
+            st.error(f"⚠️ HATA: Parça boyutları ({round(gercek_genislik)}x{round(gercek_yukseklik)} mm), seçilen plakaya ({secilen_plaka_adi} mm) sığmıyor! Lütfen daha büyük bir plaka seçin.")
+        else:
+            # Hesaplamalara devam et
+            gecerli_konturlar = []
+            toplam_yol_piksel = 0
 
-        for i, cnt in enumerate(contours):
-            if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
-                cevre = cv2.arcLength(cnt, True)
-                if cevre * oran > 10.0:
-                    gecerli_konturlar.append(cnt)
-                    toplam_yol_piksel += cevre
-        
-        # HESAPLAMALAR
-        piercing_basi = len(gecerli_konturlar)
-        kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
-        sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
-        agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
+            for i, cnt in enumerate(contours):
+                if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
+                    cevre = cv2.arcLength(cnt, True)
+                    if cevre * oran > 10.0:
+                        gecerli_konturlar.append(cnt)
+                        toplam_yol_piksel += cevre
+            
+            # HESAPLAMALAR
+            piercing_basi = len(gecerli_konturlar)
+            kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
+            sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+            agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+            toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
 
-        # GÖRSEL SONUÇ
-        output_img = img.copy()
-        cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 2)
-        
-        # Parçanın üzerine veya altına ölçü bilgisi yazdırma (Görselde göstermek için)
-        cv2.putText(output_img, f"{round(gercek_genislik_mm, 2)} mm", (x, y - 10), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-        
-        st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), caption="Analiz Edilen Parça", use_container_width=True)
-        
-        # ANALİZ TABLOSU
-        st.subheader("📋 Kesim Analizi ve Teklif")
-        
-        # Yeni kolon yapısı (5 Kolon: Genişlik ve Yükseklik dahil)
-        m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("Parça Ölçüleri", f"{round(gercek_genislik_mm, 1)} x {round(gercek_yukseklik_mm, 1)} mm")
-        m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
-        m3.metric("Piercing Adedi", f"{piercing_basi * adet}")
-        m4.metric("Tahmini Süre", f"{round(sure_dk, 1)} dk")
-        m5.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
-        
-        st.divider()
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("### Teknik Detaylar")
-            st.write(f"- Parça Genişliği: **{round(gercek_genislik_mm, 2)} mm**")
-            st.write(f"- Parça Yüksekliği: **{round(gercek_yukseklik_mm, 2)} mm**")
-            st.write(f"- Kesim Hızı: **{guncel_hiz} mm/dk**")
-        with col2:
-            st.write("### Maliyet Dağılımı")
-            st.write(f"- Toplam Ağırlık: **{round(agirlik * adet, 2)} kg**")
-            st.write(f"- İşçilik: **{round(sure_dk * DK_UCRETI, 2)} TL**")
-            st.write(f"- Malzeme: **{round(agirlik * adet * KG_UCRETI, 2)} TL**")
+            # GÖRSEL SONUÇ
+            output_img = img.copy()
+            cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 2)
+            st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), caption="Analiz Edilen Kesim Yolları", use_container_width=True)
+            
+            # ÖZET METRİKLER
+            st.subheader("📋 Teklif Özeti")
+            m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
+            m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
+            m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
+            m3.metric("Piercing", f"{piercing_basi * adet} ad")
+            m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+            
+            with st.expander("🔍 Teknik Detaylar ve Maliyet Dökümü"):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.write("**Parça Bilgisi**")
+                    st.write(f"- Genişlik: {round(gercek_genislik, 2)} mm")
+                    st.write(f"- Yükseklik: {round(gercek_yukseklik, 2)} mm")
+                with col2:
+                    st.write("**Operasyon**")
+                    st.write(f"- Kesim Hızı: {guncel_hiz} mm/dk")
+                    st.write(f"- Birim Ağırlık: {round(agirlik, 2)} kg")
+                with col3:
+                    st.write("**Maliyet**")
+                    st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
+                    st.write(f"- Malzeme: {round(agirlik * adet * KG_UCRETI, 2)} TL")
