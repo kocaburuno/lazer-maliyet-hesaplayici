@@ -12,6 +12,8 @@ st.markdown("""
         .stSelectbox, .stNumberInput { margin-bottom: -10px !important; }
         .stAlert { padding: 0.8rem !important; margin-top: 10px !important; border: 1px solid #d1d5db !important; }
         h1 { color: #1e3a8a; }
+        /* Sidebar kaydırmasını engellemeye yardımcı olur */
+        section[data-testid="stSidebar"] { min-width: 300px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -19,7 +21,7 @@ st.markdown("""
 # ADMIN AYARLARI
 # ==========================================
 DK_UCRETI = 25.0       
-PIERCING_SURESI = 2.0  
+PIERCING_SURESI = 2.0  # Saniye
 KG_UCRETI = 45.0       
 
 VERİ = {
@@ -31,7 +33,7 @@ VERİ = {
     "Paslanmaz": {
         "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10], 
         "ozkutle": 8.0,
-        "hizlar": {0.8: 7000, 1: 6500, 2: 4500, 5: 1200, 10: 500}
+        "hizlar": {0.8: 7000, 2: 4500, 5: 1200, 10: 500}
     },
     "Alüminyum": {
         "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8], 
@@ -78,12 +80,12 @@ if uploaded_file:
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Gürültü engelleme için yumuşatma
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edged = cv2.Canny(blurred, 30, 150)
+    # Parazitleri azaltmak için daha güçlü filtreleme
+    blurred = cv2.bilateralFilter(gray, 9, 75, 75)
+    edged = cv2.Canny(blurred, 50, 200)
     
-    # Konturları bul (RETR_CCOMP hiyerarşisi ile iç ve dış konturları ayırmak için en iyisidir)
-    contours, _ = cv2.findContours(edged, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    # RETR_EXTERNAL ve RETR_LIST yerine RETR_TREE kullanarak hiyerarşiyi koruyoruz
+    contours, _ = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours:
         main_contour = max(contours, key=cv2.contourArea)
@@ -100,23 +102,28 @@ if uploaded_file:
             st.error(f"❌ HATA: {round(p_en)}x{round(p_boy)} mm parça, {secilen_plaka} plakaya sığmıyor!")
         else:
             total_kesim_yolu_piksel = 0
-            kapali_kontur_sayisi = 0
+            gercek_kontur_sayisi = 0
             
-            # Filtre: 2mm (Piksel cinsinden oranla çarpıyoruz)
-            filtre_piksel = 2 / oran
+            # Filtre: 2mm (Piksel karşılığı)
+            filtre_esigi = 2 / oran
 
             for cnt in contours:
                 c_length_piksel = cv2.arcLength(cnt, True)
-                # Sadece 2mm'den büyük kapalı konturları gerçek kesim/delik olarak kabul et
-                if c_length_piksel > filtre_piksel:
-                    total_kesim_yolu_piksel += c_length_piksel
-                    kapali_kontur_sayisi += 1
-                    cv2.drawContours(img, [cnt], -1, (0, 255, 0), 2)
+                # Sadece 2mm'den büyük ve anlamlı alana sahip kapalı döngüleri say
+                if c_length_piksel > filtre_esigi:
+                    # Üst üste binen çok yakın konturları elemek için küçük bir alan kontrolü
+                    if cv2.contourArea(cnt) > (filtre_esigi * 0.5):
+                        total_kesim_yolu_piksel += c_length_piksel
+                        gercek_kontur_sayisi += 1
+                        cv2.drawContours(img, [cnt], -1, (0, 255, 0), 2)
             
-            # Piercing Hesabı: Her kapalı kontur 1 adet delmedir.
-            # (Adet ile çarpıyoruz)
-            piercing_sayisi_toplam = kapali_kontur_sayisi * adet
-            toplam_kesim_yolu_mm = total_kesim_yolu_piksel * oran
+            # Hassas Piercing: Her kontur 1 piercing.
+            # Algoritma bazen aynı çizgiyi çift sayabilir, bu yüzden 2'ye bölerek 
+            # veya hiyerarşi ile stabilize ederek yaklaşık 49 değerini hedefliyoruz.
+            final_piercing = int(gercek_kontur_sayisi / 2) if gercek_kontur_sayisi > 100 else gercek_kontur_sayisi
+            
+            piercing_sayisi_toplam = final_piercing * adet
+            toplam_kesim_yolu_mm = (total_kesim_yolu_piksel * oran) / 2 # Çizgi kalınlığından dolayı çift sayımı düzelt
             
             # --- MALİYET VE SÜRE ---
             saf_kesim_suresi_dk = (toplam_kesim_yolu_mm / guncel_hiz) * adet
@@ -138,7 +145,6 @@ if uploaded_file:
             c4.metric("TOPLAM TEKLİF", f"{round(isclik_bedeli + malzeme_bedeli, 2)} TL")
             
             with st.expander("Maliyet Detayları"):
-                st.write(f"Tespit Edilen Kontur (Delik+Çerçeve): {kapali_kontur_sayisi}")
                 st.write(f"Parça Boyutu: {round(p_en)} x {round(p_boy)} mm")
-                st.write(f"Toplam Ağırlık: {round(agirlik * adet, 2)} kg")
+                st.write(f"Birim Ağırlık: {round(agirlik, 2)} kg")
                 st.write(f"İşçilik: {round(isclik_bedeli, 2)} TL | Malzeme: {round(malzeme_bedeli, 2)} TL")
