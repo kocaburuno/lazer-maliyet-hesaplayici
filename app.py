@@ -1,47 +1,47 @@
 import streamlit as st
 import cv2
 import numpy as np
-from PIL import Image
 
 # Sayfa ayarları
 st.set_page_config(page_title="Alan Lazer - Teklif Paneli", layout="wide")
 
-# Gelişmiş CSS: Sidebar'ı tamamen kilitleme ve kaydırmayı engelleme
+# Gelişmiş CSS: Sidebar'ı çiviyle çakma, kaydırmayı engelleme ve logo optimizasyonu
 st.markdown("""
     <style>
-        /* Sidebar'ın ana konteynırını sabitle */
-        [data-testid="stSidebar"] > div:first-child {
+        /* Sidebar'ı ekrana sabitle ve kaydırma çubuğunu yok et */
+        section[data-testid="stSidebar"] {
             position: fixed !important;
             height: 100vh !important;
-            overflow: hidden !important; /* İçerideki kaydırmayı kapatır */
+            overflow: hidden !important;
         }
         
-        /* Sidebar içeriğini dikeyde sıkıştır ve taşmayı engelle */
-        [data-testid="stSidebarNav"] {
-            display: none; /* Gereksiz boşluğu kaldırır */
-        }
-        
-        /* Elemanlar arasındaki boşlukları minimuma indir */
-        .stSelectbox, .stNumberInput, .stImage {
-            margin-bottom: -15px !important;
-        }
-        
-        /* Sidebar altındaki bilgi kutusunu yukarı çek */
-        div.stAlert {
-            padding: 0.5rem !important;
-            margin-top: 10px !important;
+        /* Sidebar içindeki boşlukları yönet */
+        section[data-testid="stSidebar"] .stImage {
+            margin-bottom: -20px !important;
+            padding: 10px !important;
         }
 
-        /* Başlıkları küçült */
-        h3 {
-            font-size: 1.1rem !important;
-            margin-bottom: 5px !important;
+        /* Input alanlarını sıkıştır */
+        .stSelectbox, .stNumberInput {
+            margin-bottom: -15px !important;
+        }
+
+        /* Sidebar alt bilgi kutusu stili */
+        div.stAlert {
+            padding: 10px !important;
+            margin-top: 15px !important;
+            border-radius: 10px !important;
+        }
+
+        /* Ana ekran başlık stili */
+        h1 {
+            color: #1e3a8a;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# ADMIN AYARLARI
+# ADMIN AYARLARI (Buradan güncelleyebilirsin)
 # ==========================================
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
@@ -67,7 +67,7 @@ VERİ = {
 
 # --- SOL SABİT MENÜ (SIDEBAR) ---
 with st.sidebar:
-    # Logo yükleme
+    # Logo yükleme - sidebar genişliğine uyum sağlar
     try:
         st.image("logo.png", use_container_width=True)
     except:
@@ -83,16 +83,15 @@ with st.sidebar:
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
     referans_olcu = st.number_input("Çizim Genişliği (mm)", value=3295)
     
-    # BİLGİLENDİRME ALANI
+    # BİLGİLENDİRME ALANI (KESİM HIZI VE BİRİM MALİYET)
     st.markdown("---")
-    hiz_listesi = VERİ[metal]["hizlar"]
-    # Kalınlık tam eşleşmezse en yakın düşük hızı seçer
-    guncel_hiz = hiz_listesi.get(kalinlik, min(hiz_listesi.values()))
+    hiz_tablosu = VERİ[metal]["hizlar"]
+    guncel_hiz = hiz_tablosu.get(kalinlik, min(hiz_tablosu.values()))
     
     st.info(f"""
     **Sistem Parametreleri:**
-    * Kesim Hızı: {guncel_hiz} mm/dk
-    * Birim Maliyet: {DK_UCRETI} TL/dk
+    - Kesim Hızı: **{guncel_hiz} mm/dk**
+    - Dakika Ücreti: **{DK_UCRETI} TL**
     """)
 
 # --- ANA EKRAN ---
