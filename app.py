@@ -28,10 +28,9 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR (Logo Geri Getirildi)
+# 3. SIDEBAR (Logo ve Genişlik Girişi)
 with st.sidebar:
-    # --- DÜZELTME 1: LOGO ---
-    st.markdown("<h1 style='text-align: center; color: red;'>ALAN LAZER</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
     st.divider()
     
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
@@ -42,10 +41,12 @@ with st.sidebar:
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
     
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
-    referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295.39)
+    
+    # KRİTİK REVİZE: Kullanıcı parçanın en geniş yerini girer
+    referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=1000.0, help="Çizimdeki parçanın gerçek dünyadaki toplam genişliğini giriniz.")
     
     st.divider()
-    hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84) # Resminizdeki 84 değerine çekildi
+    hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84)
     
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
@@ -66,14 +67,13 @@ if uploaded_file:
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours and hierarchy is not None:
-        # --- DÜZELTME 2: GENİŞLİK HESAPLAMA MANTIĞI ---
-        # Tüm konturların oluşturduğu en dış dikdörtgeni (bounding box) baz alıyoruz
+        # REVİZE: Tüm konturları kapsayan en dış çerçeveyi bul
         all_pts = np.concatenate(contours)
         x, y, w_px, h_px = cv2.boundingRect(all_pts)
         
-        # Referans ölçü çizimin en dış genişliğine atanır
+        # Oranlama: Kullanıcının girdiği mm / Resimdeki piksel genişliği
         oran = referans_olcu / w_px
-        gercek_genislik = w_px * oran
+        gercek_genislik = w_px * oran  # Bu zaten girdiğiniz referans ölçüye eşit olacak
         gercek_yukseklik = h_px * oran
         
         # Plaka Kontrolü
@@ -86,39 +86,35 @@ if uploaded_file:
             gecerli_konturlar = []
             toplam_yol_piksel = 0
             for i, cnt in enumerate(contours):
+                # Sadece gerçek kesim hatlarını (hiyerarşiye göre) al
                 if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                     cevre = cv2.arcLength(cnt, True)
-                    if cevre * oran > 10.0:
+                    if cevre * oran > 5.0: # Çok küçük gürültüleri ele
                         gecerli_konturlar.append(cnt)
                         toplam_yol_piksel += cevre
             
+            # Görselleştirme
             display_img = original_img.copy()
             cv2.drawContours(display_img, gecerli_konturlar, -1, (0, 255, 0), 2)
             rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
-            st.image(rgb_img, caption="Tespit Edilen Kesim Hatları (Yeşil)", use_container_width=True)
+            st.image(rgb_img, caption="Tespit Edilen Kesim Yolları", use_container_width=True)
 
+            # Hesaplamalar
             piercing_basi = len(gecerli_konturlar)
             kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
             sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
             agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
             toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
 
+            # Özet Metrikler
             st.subheader("📋 Teklif Özeti")
             m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
-            # Genişlik şimdi tam olarak "Çizimdeki Genişlik" girdisine eşit çıkacaktır
             m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
             m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
             m3.metric("Piercing", f"{piercing_basi * adet} ad")
             m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
             
-            with st.expander("🔍 Teknik Detaylar ve Maliyet Dökümü"):
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.write(f"- Genişlik: {round(gercek_genislik, 2)} mm")
-                    st.write(f"- Yükseklik: {round(gercek_yukseklik, 2)} mm")
-                with col2:
-                    st.write(f"- Kesim Hızı: {guncel_hiz} mm/dk")
-                    st.write(f"- Birim Ağırlık: {round(agirlik, 2)} kg")
-                with col3:
-                    st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
-                    st.write(f"- Malzeme: {round(agirlik * adet * KG_UCRETI, 2)} TL")
+            with st.expander("🔍 Teknik Detaylar"):
+                st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
+                st.write(f"- Kesim Hızı: {guncel_hiz} mm/dk")
+                st.write(f"- İşçilik Payı: {round(sure_dk * DK_UCRETI, 2)} TL")
