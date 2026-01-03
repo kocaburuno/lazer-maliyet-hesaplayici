@@ -2,7 +2,7 @@ import streamlit as st
 import cv2
 import numpy as np
 
-st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon="logo.png")
+st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon="tarayici.png")
 
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
