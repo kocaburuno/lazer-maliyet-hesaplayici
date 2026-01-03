@@ -5,43 +5,29 @@ import numpy as np
 # 1. SAYFA YAPILANDIRMASI
 st.set_page_config(page_title="Teklif Paneli", layout="wide")
 
-# 2. MALZEME VERİLERİ (Genişletilmiş Standart Liste)
-VERİ = {
-    "Siyah Sac": {
-        "ozkutle": 7.85, 
-        "kalinliklar": [0.5, 0.8, 1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25],
-        "hizlar": {1: 5500, 3: 2800, 5: 1800, 10: 800, 20: 400}
-    },
-    "Paslanmaz": {
-        "ozkutle": 8.0, 
-        "kalinliklar": [0.5, 0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15],
-        "hizlar": {1: 6000, 2: 4500, 5: 1200, 10: 500}
-    },
-    "Alüminyum": {
-        "ozkutle": 2.7, 
-        "kalinliklar": [0.5, 0.8, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
-        "hizlar": {1: 8000, 3: 4000, 5: 1500, 10: 400}
-    }
-}
+# 2. ÜRETİM PARAMETRELERİ (İlk verdiğin bilgilere sadık kalındı)
+DK_UCRETI = 25.0       
+PIERCING_SURESI = 2.0  
+KG_UCRETI = 45.0       
 
-DK_UCRETI = 25.0
-PIERCING_SURESI = 2.0
-KG_UCRETI = 45.0
+VERİ = {
+    "Siyah Sac": {"ozkutle": 7.85, "kalinliklar": [0.8, 1, 2, 3, 5, 10, 20], "hizlar": {0.8: 6000, 3: 2800, 10: 800}},
+    "Paslanmaz": {"ozkutle": 8.0, "kalinliklar": [0.8, 1, 2, 5, 10], "hizlar": {0.8: 7000, 2: 4500, 10: 500}},
+    "Alüminyum": {"ozkutle": 2.7, "kalinliklar": [0.8, 1, 2, 5, 8], "hizlar": {0.8: 8000, 2: 5000, 8: 600}}
+}
 
 # 3. SIDEBAR
 with st.sidebar:
-    try: st.image("logo.png", use_container_width=True)
-    except: st.title("LOGO")
-    
+    st.title("ALAN LAZER")
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     secilen_plaka = st.selectbox("Plaka Boyutu (mm)", ["1500x6000", "1500x3000", "2500x1250"])
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
     referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295.0)
     
-    guncel_hiz = VERİ[metal]["hizlar"].get(kalinlik, min(VERİ[metal]["hizlar"].values()))
+    guncel_hiz = VERİ[metal]["hizlar"].get(kalinlik, 2000)
 
-# 4. ANA PANEL
+# 4. ANA EKRAN
 st.title("Profesyonel Teklif Paneli")
 uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
 
@@ -50,11 +36,11 @@ if uploaded_file:
     img = cv2.imdecode(file_bytes, 1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Adaptif eşikleme: Işık farklarını yok eder ve tüm konturları belirginleştirir
-    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                   cv2.THRESH_BINARY_INV, 11, 2)
+    # Eşikleme (Çizgileri belirginleştir)
+    _, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
     
-    # Konturları hiyerarşik bul
+    # PİERCİNG SAYISINI DÜZELTEN HİYERARŞİ (RETR_CCOMP)
+    # Bu mod, iç içe geçmiş iki çizgiden sadece birini "delik" olarak kabul eder.
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     
     if contours and hierarchy is not None:
@@ -66,34 +52,33 @@ if uploaded_file:
         toplam_yol_piksel = 0
 
         for i, cnt in enumerate(contours):
-            # Hiyerarşi Kontrolü: 
-            # hierarchy[0][i][3] == -1 -> En dış çerçeve
-            # hierarchy[0][i][3] != -1 -> İç delikler (Sadece ilk seviye çocukları alarak çift saymayı önler)
-            # hierarchy[0][i][3] == 0  -> En dış çerçevenin hemen içindeki delikler
-            parent_idx = hierarchy[0][i][3]
-            
-            if parent_idx == -1 or parent_idx == 0:
+            # hiyerarşi[0][i][3] == -1 : En dış çerçeve
+            # hiyerarşi[0][i][3] == 0  : Dış çerçevenin içindeki ilk delikler
+            if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                 cevre = cv2.arcLength(cnt, True)
-                if cevre * oran > 2.0: # 2mm'den küçük pikselleri ele (nokta hatası)
+                # Çok küçük gürültüleri (noktaları) elemek için 5mm altını sayma
+                if cevre * oran > 5.0: 
                     gecerli_konturlar.append(cnt)
                     toplam_yol_piksel += cevre
         
         # Sonuçlar
         piercing_basi = len(gecerli_konturlar)
-        kesim_m = (toplam_yol_piksel * oran) / 1000
-        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+        piercing_toplam = piercing_basi * adet
+        kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
+        
+        # Maliyet
+        sure_dk = (kesim_m_basi := (kesim_yolu_m / adet)) * (1000 / guncel_hiz) * adet + (piercing_toplam * PIERCING_SURESI / 60)
         agirlik = (cv2.contourArea(main_contour) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-        fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
+        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
 
-        # Görselleştirme: TÜM KONTURLAR YEŞİL
+        # Görselleştirme
         output_img = img.copy()
         cv2.drawContours(output_img, gecerli_konturlar, -1, (0, 255, 0), 2)
         st.image(cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB), use_container_width=True)
         
-        # Özet Tablosu
-        st.subheader("📋 Kesim Analizi ve Teklif")
+        # Metrikler
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Toplam Kesim", f"{round(kesim_m * adet, 1)} m")
-        c2.metric("Piercing Adedi", f"{piercing_basi * adet}")
+        c1.metric("Toplam Kesim", f"{round(kesim_yolu_m, 1)} m")
+        c2.metric("Piercing Adedi", f"{piercing_toplam}")
         c3.metric("Tahmini Süre", f"{round(sure_dk, 1)} dk")
-        c4.metric("TOPLAM FİYAT", f"{round(fiyat, 2)} TL")
+        c4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
