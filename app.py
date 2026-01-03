@@ -2,15 +2,11 @@ import streamlit as st
 import cv2
 import numpy as np
 
-# 1. SAYFA YAPILANDIRMASI
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon="logo.png")
 
-# 2. ÜRETİM VE FİYAT PARAMETRELERİ (Sabit)
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
-KG_UCRETI = 45.0       
 
-# Malzeme Listesi (Tam istediğiniz detaylı liste)
 VERİ = {
     "Siyah Sac": {
         "ozkutle": 7.85, 
@@ -29,16 +25,13 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR (LOGO GÖRSELİ EKLENDİ)
 with st.sidebar:
-    # --- LOGO BURADA (logo.png dosyası proje klasöründe olmalı) ---
     try:
         st.image("logo.png", use_column_width=True)
     except:
-        st.error("'logo.png' bulunamadı.")
         st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
         
-    st.markdown("---") # Ayırıcı çizgi
+    st.markdown("---")
     
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
@@ -53,7 +46,6 @@ with st.sidebar:
     st.markdown("---")
     hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84)
     
-    # Hız Seçimi
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
@@ -61,7 +53,39 @@ with st.sidebar:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
-# 4. ANA PANEL
+    kg_fiyati = 45.0
+    if metal == "Siyah Sac":
+        kg_fiyati = 45.0
+    elif metal == "Paslanmaz":
+        if kalinlik < 3:
+            kg_fiyati = 50.0
+        elif kalinlik == 3:
+            kg_fiyati = 55.0
+        elif kalinlik == 4:
+            kg_fiyati = 60.0
+        elif kalinlik == 5:
+            kg_fiyati = 65.0
+        elif kalinlik == 6:
+            kg_fiyati = 70.0
+        elif kalinlik == 8:
+            kg_fiyati = 75.0
+        elif kalinlik >= 10:
+            kg_fiyati = 80.0
+    elif metal == "Alüminyum":
+        if kalinlik <= 3:
+            kg_fiyati = 60.0
+        elif kalinlik == 4:
+            kg_fiyati = 70.0
+        elif kalinlik == 6:
+            kg_fiyati = 80.0
+        elif kalinlik >= 8:
+            kg_fiyati = 100.0
+
+    st.markdown("---")
+    st.subheader("Birim Bilgiler")
+    st.info(f"Kesim Hızı: {guncel_hiz} mm/dk")
+    st.info(f"KG Birim Fiyatı: {kg_fiyati} TL")
+
 st.title("Profesyonel Kesim Analiz Paneli")
 uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
 
@@ -77,29 +101,23 @@ if uploaded_file:
     if contours and hierarchy is not None:
         valid_contour_list = []
         
-        # ÇERÇEVE FİLTRESİ
         for i, cnt in enumerate(contours):
             x, y, w, h = cv2.boundingRect(cnt)
             
-            # Eğer kontur resmin %98'inden büyükse bu dış çerçevedir, atla!
             if w > w_img * 0.98 and h > h_img * 0.98:
                 continue
             
-            # Hiyerarşi kontrolü
             if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                 valid_contour_list.append(cnt)
 
         if valid_contour_list:
-            # Sadece geçerli (parça) konturları birleştir
             all_pts = np.concatenate(valid_contour_list)
             x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
             
-            # Oranlama
             oran = referans_olcu / w_px
             gercek_genislik = w_px * oran
             gercek_yukseklik = h_px * oran
             
-            # Plaka Kontrolü
             p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
             g_max, g_min = max(gercek_genislik, gercek_yukseklik), min(gercek_genislik, gercek_yukseklik)
             
@@ -108,20 +126,17 @@ if uploaded_file:
             else:
                 toplam_yol_piksel = sum([cv2.arcLength(c, True) for c in valid_contour_list])
                 
-                # Görselleştirme
                 display_img = original_img.copy()
                 cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
                 rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
                 st.image(rgb_img, caption="Analiz Edilen Parça (Çerçeve Temizlendi)", use_container_width=True)
 
-                # Hesaplamalar
                 piercing_basi = len(valid_contour_list)
                 kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
                 sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
                 agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-                toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * KG_UCRETI)
+                toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
 
-                # Özet Metrikler
                 st.subheader("📋 Teklif Özeti")
                 m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
                 m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
@@ -132,4 +147,4 @@ if uploaded_file:
                 with st.expander("🔍 Teknik Detaylar"):
                     st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
                     st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
-                    st.write(f"- Malzeme: {round(agirlik * adet * KG_UCRETI, 2)} TL")
+                    st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
