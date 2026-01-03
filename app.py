@@ -3,31 +3,49 @@ import cv2
 import numpy as np
 from PIL import Image
 
-# Sayfa ayarları ve Sabit Kenar Çubuğu Stili
+# Sayfa ayarları
 st.set_page_config(page_title="Alan Lazer - Teklif Paneli", layout="wide")
 
-# CSS ile sol menüyü (sidebar) sabitleme ve elemanları sıkılaştırma
+# Gelişmiş CSS: Sidebar'ı tamamen kilitleme ve kaydırmayı engelleme
 st.markdown("""
     <style>
-        [data-testid="stSidebar"] {
-            position: fixed;
-            height: 100vh;
+        /* Sidebar'ın ana konteynırını sabitle */
+        [data-testid="stSidebar"] > div:first-child {
+            position: fixed !important;
+            height: 100vh !important;
+            overflow: hidden !important; /* İçerideki kaydırmayı kapatır */
         }
-        [data-testid="stSidebar"] .block-container {
-            padding-top: 1rem;
+        
+        /* Sidebar içeriğini dikeyde sıkıştır ve taşmayı engelle */
+        [data-testid="stSidebarNav"] {
+            display: none; /* Gereksiz boşluğu kaldırır */
         }
-        .stNumberInput, .stSelectbox {
-            margin-bottom: -10px;
+        
+        /* Elemanlar arasındaki boşlukları minimuma indir */
+        .stSelectbox, .stNumberInput, .stImage {
+            margin-bottom: -15px !important;
+        }
+        
+        /* Sidebar altındaki bilgi kutusunu yukarı çek */
+        div.stAlert {
+            padding: 0.5rem !important;
+            margin-top: 10px !important;
+        }
+
+        /* Başlıkları küçült */
+        h3 {
+            font-size: 1.1rem !important;
+            margin-bottom: 5px !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# ADMIN AYARLARI (YALNIZCA BURADAN DEĞİŞTİRİLİR)
+# ADMIN AYARLARI
 # ==========================================
-DK_UCRETI = 25.0       # Dakika kesim ücreti (TL)
-PIERCING_SURESI = 2.0  # Her bir patlatma için ek süre (Saniye)
-KG_UCRETI = 45.0       # Malzeme kg fiyatı (TL)
+DK_UCRETI = 25.0       
+PIERCING_SURESI = 2.0  
+KG_UCRETI = 45.0       
 
 VERİ = {
     "Siyah Sac": {
@@ -49,10 +67,11 @@ VERİ = {
 
 # --- SOL SABİT MENÜ (SIDEBAR) ---
 with st.sidebar:
+    # Logo yükleme
     try:
         st.image("logo.png", use_container_width=True)
     except:
-        st.subheader("ALAN LAZER")
+        st.markdown("### ALAN LAZER")
     
     st.markdown("### Üretim Seçenekleri")
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
@@ -62,14 +81,14 @@ with st.sidebar:
     secilen_plaka = st.selectbox("Plaka Boyutu (mm)", plakalar)
     
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
-    referans_olcu = st.number_input("Çizimdeki Genişlik (mm)", value=3295)
+    referans_olcu = st.number_input("Çizim Genişliği (mm)", value=3295)
     
     # BİLGİLENDİRME ALANI
     st.markdown("---")
     hiz_listesi = VERİ[metal]["hizlar"]
+    # Kalınlık tam eşleşmezse en yakın düşük hızı seçer
     guncel_hiz = hiz_listesi.get(kalinlik, min(hiz_listesi.values()))
     
-    # Bilgi Kutusu: Hız ve Maliyet bir arada
     st.info(f"""
     **Sistem Parametreleri:**
     * Kesim Hızı: {guncel_hiz} mm/dk
