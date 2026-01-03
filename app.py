@@ -85,4 +85,10 @@ if uploaded_file:
 
             st.subheader("📋 Gelişmiş Kesim Analizi")
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Toplam Kesim Yolu", f
+            c1.metric("Toplam Kesim Yolu", f"{round(toplam_kesim_yolu_mm/1000, 2)} Metre")
+            c2.metric("İç Boşluk (Delik)", f"{int(delik_sayisi)} Adet")
+            c3.metric("Tahmini Süre", f"{round(toplam_sure, 1)} dk")
+            c4.metric("TOPLAM FİYAT", f"{round(isclik + malzeme, 2)} TL")
+            
+            st.info(f"Not: {int(delik_sayisi)} adet giriş (piercing) noktası tespit edildi. Kesim süresine dahil edilmiştir.")
+            
