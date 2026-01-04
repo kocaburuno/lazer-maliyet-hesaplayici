@@ -24,9 +24,9 @@ st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_ic
 # --- CSS İLE STİL AYARLAMALARI ---
 st.markdown("""
     <style>
-        /* 1) Sidebar üst boşluğunu sıfırlama */
+        /* Sidebar üst boşluğunu sıfırlama */
         section[data-testid="stSidebar"] div.block-container {
-            padding-top: 0rem; /* Boşluk tamamen alındı */
+            padding-top: 0rem;
         }
         
         /* Logo görselini en tepeye yaslama */
@@ -34,8 +34,6 @@ st.markdown("""
             margin-top: 10px;
         }
 
-        /* 2) Alanlazer.com link tasarımı için özel sınıf gerekmez, HTML içinde inline style kullandık */
-        
         /* Butonları görsel olarak eşitleme */
         div.stButton > button { min-height: 50px; }
     </style>
@@ -72,14 +70,14 @@ VERİ = {
     }
 }
 
-# --- 4. SIDEBAR (REVİZE EDİLDİ) ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
     except:
         st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
     
-    # 1) WEB SİTESİ LİNKİ (YENİ TASARIM: İnce, Geniş, Şık)
+    # WEB SİTESİ LİNKİ
     st.markdown(
         """
         <div style='text-align: center; margin-top: -10px; margin-bottom: 25px;'>
@@ -94,17 +92,13 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # 2) GİRİŞ DÜZENİ (REVİZE EDİLDİ: Kesilmeleri önleyen yapı)
-    
-    # Metal Türü (Uzun isimler sığsın diye tam satır)
+    # GİRİŞ DÜZENİ
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     
-    # Plaka Boyutu (Uzun isimler sığsın diye tam satır)
     plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
 
-    # Kalınlık ve Adet (Kısa veriler, yan yana durabilir)
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
@@ -146,9 +140,8 @@ with st.sidebar:
 
 # --- 5. ANA PANEL İÇERİĞİ ---
 
-# 5) ANA BAŞLIK GÜNCELLENDİ
-st.title("AI DESTEKLİ PROFESYONEL MALİYET ANALİZ PANELİ")
-# 3) Alt başlık (caption) KALDIRILDI
+# --- BAŞLIK GÜNCELLENDİ ---
+st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
 
 # === DURUM A: ANASAYFA (KARŞILAMA EKRANI) ===
 if st.session_state.sayfa == 'anasayfa':
@@ -159,11 +152,9 @@ if st.session_state.sayfa == 'anasayfa':
     
     # --- 1. Sütun: Fotoğraftan Analiz ---
     with c1:
-        # 4) KART BAŞLIĞI GÜNCELLENDİ
         st.info("📸 **FOTOĞRAFTAN ANALİZ**")
-        # 1. KART AÇIKLAMASI KISALTILDI (2 satır olması için)
         st.markdown("""
-        Fotoğraf veya eskiz görsellerini yükleyin. **AI görüntü işleme algoritmamız** kesim yollarını otomatik tespit eder.
+        Fotoğraf veya eskiz görsellerini yükleyin. **AI görüntü işleme algoritmamız** işini yapsın.
         
         **Özellikler:**
         * JPG, PNG formatı
