@@ -1,6 +1,7 @@
 import streamlit as st
 import cv2
 import numpy as np
+import math
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon="tarayici.png")
 
@@ -41,10 +42,6 @@ with st.sidebar:
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
     
     adet = st.number_input("Parça Adedi", min_value=1, value=1)
-    referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=3295.39, help="Çizimdeki parçanın en solundan en sağına olan gerçek ölçüyü giriniz.")
-    
-    st.markdown("---")
-    hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84)
     
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
@@ -57,29 +54,18 @@ with st.sidebar:
     if metal == "Siyah Sac":
         kg_fiyati = 45.0
     elif metal == "Paslanmaz":
-        if kalinlik < 3:
-            kg_fiyati = 50.0
-        elif kalinlik == 3:
-            kg_fiyati = 55.0
-        elif kalinlik == 4:
-            kg_fiyati = 60.0
-        elif kalinlik == 5:
-            kg_fiyati = 65.0
-        elif kalinlik == 6:
-            kg_fiyati = 70.0
-        elif kalinlik == 8:
-            kg_fiyati = 75.0
-        elif kalinlik >= 10:
-            kg_fiyati = 80.0
+        if kalinlik < 3: kg_fiyati = 50.0
+        elif kalinlik == 3: kg_fiyati = 55.0
+        elif kalinlik == 4: kg_fiyati = 60.0
+        elif kalinlik == 5: kg_fiyati = 65.0
+        elif kalinlik == 6: kg_fiyati = 70.0
+        elif kalinlik == 8: kg_fiyati = 75.0
+        elif kalinlik >= 10: kg_fiyati = 80.0
     elif metal == "Alüminyum":
-        if kalinlik <= 3:
-            kg_fiyati = 60.0
-        elif kalinlik == 4:
-            kg_fiyati = 70.0
-        elif kalinlik == 6:
-            kg_fiyati = 80.0
-        elif kalinlik >= 8:
-            kg_fiyati = 100.0
+        if kalinlik <= 3: kg_fiyati = 60.0
+        elif kalinlik == 4: kg_fiyati = 70.0
+        elif kalinlik == 6: kg_fiyati = 80.0
+        elif kalinlik >= 8: kg_fiyati = 100.0
 
     st.markdown("---")
     st.subheader("Birim Bilgiler")
@@ -87,64 +73,176 @@ with st.sidebar:
     st.info(f"KG Birim Fiyatı: {kg_fiyati} TL")
 
 st.title("Profesyonel Kesim Analiz Paneli")
-uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
 
-if uploaded_file:
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    original_img = cv2.imdecode(file_bytes, 1)
-    h_img, w_img = original_img.shape[:2] 
-    
-    gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, hassasiyet, 255, cv2.THRESH_BINARY_INV)
-    contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-    
-    if contours and hierarchy is not None:
-        valid_contour_list = []
+tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"])
+
+with tab1:
+    col_ref, col_hassas = st.columns(2)
+    with col_ref:
+        referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=3295.39, help="Çizimdeki parçanın en solundan en sağına olan gerçek ölçü.")
+    with col_hassas:
+        hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84)
+
+    uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
+
+    if uploaded_file:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        original_img = cv2.imdecode(file_bytes, 1)
+        h_img, w_img = original_img.shape[:2] 
         
-        for i, cnt in enumerate(contours):
-            x, y, w, h = cv2.boundingRect(cnt)
+        gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
+        _, binary = cv2.threshold(gray, hassasiyet, 255, cv2.THRESH_BINARY_INV)
+        contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if contours and hierarchy is not None:
+            valid_contour_list = []
             
-            if w > w_img * 0.98 and h > h_img * 0.98:
-                continue
-            
-            if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
-                valid_contour_list.append(cnt)
+            for i, cnt in enumerate(contours):
+                x, y, w, h = cv2.boundingRect(cnt)
+                if w > w_img * 0.98 and h > h_img * 0.98: continue
+                if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
+                    valid_contour_list.append(cnt)
 
-        if valid_contour_list:
-            all_pts = np.concatenate(valid_contour_list)
-            x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
-            
-            oran = referans_olcu / w_px
-            gercek_genislik = w_px * oran
-            gercek_yukseklik = h_px * oran
-            
-            p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
-            g_max, g_min = max(gercek_genislik, gercek_yukseklik), min(gercek_genislik, gercek_yukseklik)
-            
-            if g_max > p_max or g_min > p_min:
-                st.error(f"⚠️ HATA: Parça ({round(gercek_genislik)}x{round(gercek_yukseklik)}mm), seçilen plakaya sığmıyor!")
-            else:
-                toplam_yol_piksel = sum([cv2.arcLength(c, True) for c in valid_contour_list])
+            if valid_contour_list:
+                all_pts = np.concatenate(valid_contour_list)
+                x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
                 
-                display_img = original_img.copy()
-                cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
-                rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
-                st.image(rgb_img, caption="Analiz Edilen Parça (Çerçeve Temizlendi)", use_container_width=True)
-
-                piercing_basi = len(valid_contour_list)
-                kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
-                sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
-                agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
-                toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
-
-                st.subheader("📋 Teklif Özeti")
-                m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
-                m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
-                m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
-                m3.metric("Piercing", f"{piercing_basi * adet} ad")
-                m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+                oran = referans_olcu / w_px
+                gercek_genislik = w_px * oran
+                gercek_yukseklik = h_px * oran
                 
-                with st.expander("🔍 Teknik Detaylar"):
-                    st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
-                    st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
-                    st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
+                p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
+                g_max, g_min = max(gercek_genislik, gercek_yukseklik), min(gercek_genislik, gercek_yukseklik)
+                
+                if g_max > p_max or g_min > p_min:
+                    st.error(f"⚠️ HATA: Parça ({round(gercek_genislik)}x{round(gercek_yukseklik)}mm), seçilen plakaya sığmıyor!")
+                else:
+                    toplam_yol_piksel = sum([cv2.arcLength(c, True) for c in valid_contour_list])
+                    
+                    display_img = original_img.copy()
+                    cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
+                    rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
+                    st.image(rgb_img, caption="Analiz Edilen Parça", use_container_width=True)
+
+                    piercing_basi = len(valid_contour_list)
+                    kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
+                    sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+                    agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+                    toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+
+                    st.subheader("📋 Teklif Özeti")
+                    m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
+                    m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
+                    m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
+                    m3.metric("Piercing", f"{piercing_basi * adet} ad")
+                    m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+                    
+                    with st.expander("🔍 Teknik Detaylar"):
+                        st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
+                        st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
+                        st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
+
+with tab2:
+    st.subheader("Parça Tipini Seçiniz")
+    sekil_tipi = st.radio("", ["Kare / Dikdörtgen", "Daire / Flanş"], horizontal=True)
+    
+    st.divider()
+    
+    if sekil_tipi == "Kare / Dikdörtgen":
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            genislik = st.number_input("Genişlik (mm)", min_value=1.0, value=100.0)
+        with c2:
+            yukseklik = st.number_input("Yükseklik (mm)", min_value=1.0, value=100.0)
+        with c3:
+            delik_sayisi = st.number_input("Delik Sayısı", min_value=0, value=0)
+            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.0)
+            
+        # Görsel Temsil Oluşturma
+        canvas = np.zeros((400, 600, 3), dtype="uint8")
+        # Oranlama
+        max_dim = max(genislik, yukseklik)
+        scale = 300 / max_dim
+        w_px = int(genislik * scale)
+        h_px = int(yukseklik * scale)
+        start_x = (600 - w_px) // 2
+        start_y = (400 - h_px) // 2
+        
+        cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0, 255, 0), 2)
+        
+        if delik_sayisi > 0 and delik_capi > 0:
+            d_px = int(delik_capi * scale)
+            # Temsili olarak ortada veya köşede delik gösterelim
+            cv2.circle(canvas, (300, 200), d_px // 2, (0, 255, 0), 2)
+            cv2.putText(canvas, f"{delik_sayisi}x Delik", (320, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+
+        st.image(canvas, caption=f"{genislik}x{yukseklik}mm - {delik_sayisi} Delik", use_container_width=True)
+        
+        # Matematiksel Hesaplama (Template Modu)
+        cevre_dis = 2 * (genislik + yukseklik)
+        cevre_ic = delik_sayisi * (math.pi * delik_capi)
+        toplam_kesim_mm = cevre_dis + cevre_ic
+        
+        alan_dis = genislik * yukseklik
+        alan_ic = delik_sayisi * (math.pi * (delik_capi/2)**2)
+        net_alan_mm2 = alan_dis - alan_ic
+        
+        piercing_sayisi = 1 + delik_sayisi
+
+    elif sekil_tipi == "Daire / Flanş":
+        c1, c2 = st.columns(2)
+        with c1:
+            cap = st.number_input("Dış Çap (mm)", min_value=1.0, value=100.0)
+        with c2:
+            delik_sayisi = st.number_input("İç Delik Sayısı", min_value=0, value=1)
+            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=50.0)
+            
+        canvas = np.zeros((400, 400, 3), dtype="uint8")
+        r_px = 150
+        cv2.circle(canvas, (200, 200), r_px, (0, 255, 0), 2)
+        
+        if delik_sayisi > 0 and delik_capi > 0:
+            ratio = delik_capi / cap
+            r_inner = int(r_px * ratio)
+            cv2.circle(canvas, (200, 200), r_inner // 2, (0, 255, 0), 2)
+            if delik_sayisi > 1:
+                 cv2.putText(canvas, f"{delik_sayisi} Adet", (180, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+
+        st.image(canvas, caption=f"Q{cap}mm Flanş", use_container_width=True)
+        
+        # Matematiksel Hesaplama
+        cevre_dis = math.pi * cap
+        cevre_ic = delik_sayisi * (math.pi * delik_capi)
+        toplam_kesim_mm = cevre_dis + cevre_ic
+        
+        alan_dis = math.pi * (cap/2)**2
+        alan_ic = delik_sayisi * (math.pi * (delik_capi/2)**2)
+        net_alan_mm2 = alan_dis - alan_ic
+        
+        piercing_sayisi = 1 + delik_sayisi
+        genislik = cap 
+        yukseklik = cap
+
+    # ORTAK HESAPLAMA VE SONUÇ (TAB 2)
+    p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
+    g_max, g_min = max(genislik, yukseklik), min(genislik, yukseklik)
+    
+    if g_max > p_max or g_min > p_min:
+        st.error(f"⚠️ HATA: Parça ({genislik}x{yukseklik}mm), seçilen plakaya sığmıyor!")
+    else:
+        kesim_yolu_m = toplam_kesim_mm / 1000
+        sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * PIERCING_SURESI / 60)
+        agirlik = (net_alan_mm2 * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+        
+        st.subheader("📋 Hazır Parça Teklifi")
+        m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
+        m1.metric("Parça Ölçüsü", f"{genislik} x {yukseklik} mm")
+        m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
+        m3.metric("Piercing", f"{piercing_sayisi * adet} ad")
+        m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+        
+        with st.expander("🔍 Teknik Detaylar (Hazır Parça)"):
+            st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
+            st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
+            st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
