@@ -12,11 +12,18 @@ except:
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
-# 2. SABİT PARAMETRELER
+# --- 2. SAYFA DURUM YÖNETİMİ (SESSION STATE) ---
+if 'sayfa' not in st.session_state:
+    st.session_state.sayfa = 'anasayfa'
+
+def sayfa_degistir(sayfa_adi):
+    st.session_state.sayfa = sayfa_adi
+
+# --- 3. SABİT PARAMETRELER ---
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
-FIRE_ORANI = 1.15 # %15 Fire
-KDV_ORANI = 1.20  # %20 KDV
+FIRE_ORANI = 1.15 
+KDV_ORANI = 1.20  
 
 VERİ = {
     "Siyah Sac": {
@@ -36,9 +43,8 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR (YENİLENMİŞ TASARIM)
+# --- 4. SIDEBAR (KOMPAKT TASARIM - KORUNDU) ---
 with st.sidebar:
-    # Logo Alanı
     try:
         st.image("logo.png", use_column_width=True)
     except:
@@ -46,23 +52,17 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # --- BÖLÜM 1: MALZEME SEÇİMİ ---
-    # Metal türü uzun olduğu için tek satırda tam genişlik yaptık (Kesilmeyi önler)
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
-    
-    # Kalınlık ve Adet kısa olduğu için yan yana simetrik durur
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
-    # --- BÖLÜM 2: PLAKA VE FİYAT ---
     plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
     
-    # Hız Hesaplama (Arka planda)
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
@@ -70,7 +70,6 @@ with st.sidebar:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
-    # Varsayılan Fiyat Mantığı
     varsayilan_fiyat = 30.0
     if metal == "Siyah Sac": varsayilan_fiyat = 30.0
     elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
@@ -78,7 +77,6 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Fiyat Girişi (Tam Genişlik - Net Görünüm)
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
@@ -90,21 +88,62 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # --- BÖLÜM 3: BİLGİ KARTLARI ---
-    # Alt tarafta düzenli bilgi kutucukları
     col_i1, col_i2 = st.columns(2)
     with col_i1:
         st.info(f"⚡ Hız\n{guncel_hiz}")
     with col_i2:
         st.success(f"💰 Birim\n{kg_fiyati} TL")
 
-# 4. ANA PANEL
+
+# --- 5. ANA PANEL İÇERİĞİ ---
+
 st.title("Profesyonel Kesim Analiz Paneli")
 
-tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"])
+# === DURUM A: ANASAYFA (KARŞILAMA EKRANI) ===
+if st.session_state.sayfa == 'anasayfa':
+    st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
+    st.markdown("---")
+    
+    col_foto, col_hazir = st.columns(2, gap="large")
+    
+    # --- Sol Sütun: Fotoğraftan Analiz ---
+    with col_foto:
+        st.info("📸 **FOTOĞRAFTAN ANALİZ**")
+        st.markdown("""
+        Elinizdeki teknik çizim, fotoğraf veya eskiz görselini yükleyerek otomatik maliyet hesabı yapın.
+        
+        **Nasıl Çalışır?**
+        1. Çizim görselini yükleyin.
+        2. Parçanın yatay uzunluğunu girin.
+        3. Sistem kesim yolunu ve ağırlığı otomatik hesaplasın.
+        """)
+        if st.button("FOTOĞRAF YÜKLE VE HESAPLA", use_container_width=True, type="primary"):
+            sayfa_degistir('foto_analiz')
+            st.rerun()
 
-# --- TAB 1: FOTO ANALİZ ---
-with tab1:
+    # --- Sağ Sütun: Hazır Parça ---
+    with col_hazir:
+        st.success("🛠 **HAZIR PARÇA OLUŞTUR**")
+        st.markdown("""
+        Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) ölçü girerek oluşturun.
+        
+        **Nasıl Çalışır?**
+        1. Parça tipini seçin (Kare/Flanş).
+        2. Genişlik, yükseklik ve delik bilgilerini girin.
+        3. Anlık çizim ve fiyat teklifi alın.
+        """)
+        if st.button("MANUEL PARÇA OLUŞTUR", use_container_width=True, type="primary"):
+            sayfa_degistir('hazir_parca')
+            st.rerun()
+
+# === DURUM B: FOTOĞRAFTAN ANALİZ SAYFASI ===
+elif st.session_state.sayfa == 'foto_analiz':
+    if st.button("⬅️ Ana Menüye Dön"):
+        sayfa_degistir('anasayfa')
+        st.rerun()
+    
+    st.divider()
+    
     c_analiz_ayar, c_analiz_sonuc = st.columns([1, 2])
 
     with c_analiz_ayar:
@@ -185,8 +224,14 @@ with tab1:
         else:
              st.info("Lütfen sol taraftan bir çizim görseli yükleyiniz.")
 
-# --- TAB 2: HAZIR PARÇA OLUŞTUR ---
-with tab2:
+# === DURUM C: HAZIR PARÇA OLUŞTURMA SAYFASI ===
+elif st.session_state.sayfa == 'hazir_parca':
+    if st.button("⬅️ Ana Menüye Dön"):
+        sayfa_degistir('anasayfa')
+        st.rerun()
+    
+    st.divider()
+
     c_ayar, c_sonuc = st.columns([1, 2])
     
     with c_ayar:
