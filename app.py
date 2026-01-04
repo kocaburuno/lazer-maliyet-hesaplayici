@@ -1,15 +1,13 @@
 import streamlit as st
-from PIL import Image # Faviconu garantiye almak için eklendi
+from PIL import Image
 import cv2
 import numpy as np
 import math
 
-# --- 1. AYARLAR VE FAVICON YÜKLEME ---
-# Favicon'u PIL ile açıp nesne olarak veriyoruz, bu en sağlam yöntemdir.
+# --- 1. AYARLAR VE FAVICON ---
 try:
     fav_icon = Image.open("tarayici.png")
 except:
-    # Dosya yoksa hata vermesin, varsayılan çalışsın
     fav_icon = None 
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
@@ -17,6 +15,8 @@ st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_ic
 # 2. SABİT PARAMETRELER
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
+FIRE_ORANI = 1.15 # %15 Fire eklendi
+KDV_ORANI = 1.20  # %20 KDV
 
 VERİ = {
     "Siyah Sac": {
@@ -63,7 +63,6 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # FİYAT GİRİŞİ (10'ar artış, virgülsüz görünüm)
     varsayilan_fiyat = 30.0
     if metal == "Siyah Sac":
         varsayilan_fiyat = 30.0
@@ -94,7 +93,6 @@ tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"]
 with tab1:
     col_ref, col_hassas = st.columns(2)
     with col_ref:
-        # REFERANS ÖLÇÜ (10'ar artış, virgülsüz görünüm)
         referans_olcu = st.number_input(
             "Parçanın En Geniş Uzunluğu (mm)", 
             value=3295.39, 
@@ -149,18 +147,26 @@ with tab1:
                     piercing_basi = len(valid_contour_list)
                     kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
                     sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
-                    agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+                    
+                    # Fireli Ağırlık Hesabı
+                    ham_agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+                    agirlik = ham_agirlik * FIRE_ORANI
+                    
                     toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+                    kdvli_fiyat = toplam_fiyat * KDV_ORANI
 
                     st.subheader("📋 Teklif Özeti")
                     m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
                     m1.metric("Parça Ölçüsü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm")
                     m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
                     m3.metric("Piercing", f"{piercing_basi * adet} ad")
-                    m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+                    
+                    # KDV Gösterimi
+                    m4.metric("TOPLAM (KDV HARİÇ)", f"{round(toplam_fiyat, 2)} TL")
+                    m4.markdown(f"<span style='color:green; font-weight:bold;'>KDV DAHİL: {round(kdvli_fiyat, 2)} TL</span>", unsafe_allow_html=True)
                     
                     with st.expander("🔍 Teknik Detaylar"):
-                        st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
+                        st.write(f"- Parça Ağırlığı (+%15 Fire): {round(agirlik, 2)} kg")
                         st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
                         st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
 
@@ -268,17 +274,25 @@ with tab2:
     else:
         kesim_yolu_m = toplam_kesim_mm / 1000
         sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * PIERCING_SURESI / 60)
-        agirlik = (net_alan_mm2 * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+        
+        # Fireli Ağırlık Hesabı
+        ham_agirlik = (net_alan_mm2 * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+        agirlik = ham_agirlik * FIRE_ORANI
+        
         toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+        kdvli_fiyat = toplam_fiyat * KDV_ORANI
         
         st.subheader("📋 Hazır Parça Teklifi")
         m1, m2, m3, m4 = st.columns([1.5, 1, 1, 1.2])
         m1.metric("Parça Ölçüsü", f"{genislik} x {yukseklik} mm")
         m2.metric("Toplam Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
         m3.metric("Piercing", f"{piercing_sayisi * adet} ad")
-        m4.metric("TOPLAM FİYAT", f"{round(toplam_fiyat, 2)} TL")
+        
+        # KDV Gösterimi
+        m4.metric("TOPLAM (KDV HARİÇ)", f"{round(toplam_fiyat, 2)} TL")
+        m4.markdown(f"<span style='color:green; font-weight:bold;'>KDV DAHİL: {round(kdvli_fiyat, 2)} TL</span>", unsafe_allow_html=True)
         
         with st.expander("🔍 Teknik Detaylar (Hazır Parça)"):
-            st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
+            st.write(f"- Parça Ağırlığı (+%15 Fire): {round(agirlik, 2)} kg")
             st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
             st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
