@@ -158,9 +158,7 @@ with tab2:
             delik_sayisi = st.number_input("Delik Sayısı", min_value=0, value=0)
             delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.0)
             
-        # Görsel Temsil Oluşturma
         canvas = np.zeros((400, 600, 3), dtype="uint8")
-        # Oranlama
         max_dim = max(genislik, yukseklik)
         scale = 300 / max_dim
         w_px = int(genislik * scale)
@@ -171,14 +169,25 @@ with tab2:
         cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0, 255, 0), 2)
         
         if delik_sayisi > 0 and delik_capi > 0:
-            d_px = int(delik_capi * scale)
-            # Temsili olarak ortada veya köşede delik gösterelim
-            cv2.circle(canvas, (300, 200), d_px // 2, (0, 255, 0), 2)
-            cv2.putText(canvas, f"{delik_sayisi}x Delik", (320, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+            d_px_r = int((delik_capi * scale) / 2)
+            padding = d_px_r + 10 
+            
+            coords = [
+                (start_x + padding, start_y + padding),
+                (start_x + w_px - padding, start_y + padding),
+                (start_x + w_px - padding, start_y + h_px - padding),
+                (start_x + padding, start_y + h_px - padding)
+            ]
+            
+            if delik_sayisi == 1:
+                 cv2.circle(canvas, (300, 200), d_px_r, (0, 255, 0), 2)
+            else:
+                loop_count = min(delik_sayisi, 4)
+                for i in range(loop_count):
+                    cv2.circle(canvas, coords[i], d_px_r, (0, 255, 0), 2)
 
         st.image(canvas, caption=f"{genislik}x{yukseklik}mm - {delik_sayisi} Delik", use_container_width=True)
         
-        # Matematiksel Hesaplama (Template Modu)
         cevre_dis = 2 * (genislik + yukseklik)
         cevre_ic = delik_sayisi * (math.pi * delik_capi)
         toplam_kesim_mm = cevre_dis + cevre_ic
@@ -199,18 +208,24 @@ with tab2:
             
         canvas = np.zeros((400, 400, 3), dtype="uint8")
         r_px = 150
-        cv2.circle(canvas, (200, 200), r_px, (0, 255, 0), 2)
+        center = (200, 200)
+        cv2.circle(canvas, center, r_px, (0, 255, 0), 2)
         
         if delik_sayisi > 0 and delik_capi > 0:
-            ratio = delik_capi / cap
-            r_inner = int(r_px * ratio)
-            cv2.circle(canvas, (200, 200), r_inner // 2, (0, 255, 0), 2)
-            if delik_sayisi > 1:
-                 cv2.putText(canvas, f"{delik_sayisi} Adet", (180, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
+            d_px_r = int(((delik_capi / cap) * r_px * 2) / 2)
+            
+            if delik_sayisi == 1:
+                cv2.circle(canvas, center, d_px_r, (0, 255, 0), 2)
+            else:
+                pcd_radius = int(r_px * 0.7) 
+                for i in range(delik_sayisi):
+                    angle = (2 * math.pi / delik_sayisi) * i
+                    x_offset = int(pcd_radius * math.cos(angle))
+                    y_offset = int(pcd_radius * math.sin(angle))
+                    cv2.circle(canvas, (center[0] + x_offset, center[1] + y_offset), d_px_r, (0, 255, 0), 2)
 
         st.image(canvas, caption=f"Q{cap}mm Flanş", use_container_width=True)
         
-        # Matematiksel Hesaplama
         cevre_dis = math.pi * cap
         cevre_ic = delik_sayisi * (math.pi * delik_capi)
         toplam_kesim_mm = cevre_dis + cevre_ic
@@ -223,7 +238,6 @@ with tab2:
         genislik = cap 
         yukseklik = cap
 
-    # ORTAK HESAPLAMA VE SONUÇ (TAB 2)
     p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
     g_max, g_min = max(genislik, yukseklik), min(genislik, yukseklik)
     
