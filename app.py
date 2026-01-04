@@ -36,8 +36,9 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR (KOMPAKT TASARIM)
+# 3. SIDEBAR (YENİLENMİŞ TASARIM)
 with st.sidebar:
+    # Logo Alanı
     try:
         st.image("logo.png", use_column_width=True)
     except:
@@ -45,23 +46,23 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # 1. SATIR: Metal ve Kalınlık Yan Yana (REVİZE: Metal ismine daha fazla yer verildi)
-    col_s1, col_s2 = st.columns([2, 1])
-    with col_s1:
-        metal = st.selectbox("Metal Türü", list(VERİ.keys()))
-    with col_s2:
-        kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
+    # --- BÖLÜM 1: MALZEME SEÇİMİ ---
+    # Metal türü uzun olduğu için tek satırda tam genişlik yaptık (Kesilmeyi önler)
+    metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     
-    # 2. SATIR: Plaka ve Adet Yan Yana
-    col_s3, col_s4 = st.columns([2, 1])
-    with col_s3:
-        plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
-        secilen_plaka_adi = st.selectbox("Plaka", list(plaka_secenekleri.keys()))
-        secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
-    with col_s4:
+    # Kalınlık ve Adet kısa olduğu için yan yana simetrik durur
+    col_s1, col_s2 = st.columns(2)
+    with col_s1:
+        kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
+    with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
-    # Hız Belirleme
+    # --- BÖLÜM 2: PLAKA VE FİYAT ---
+    plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
+    secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
+    secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
+    
+    # Hız Hesaplama (Arka planda)
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
@@ -69,7 +70,7 @@ with st.sidebar:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
-    # Fiyat Belirleme
+    # Varsayılan Fiyat Mantığı
     varsayilan_fiyat = 30.0
     if metal == "Siyah Sac": varsayilan_fiyat = 30.0
     elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
@@ -77,24 +78,25 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # 3. SATIR: Fiyat Girişi
+    # Fiyat Girişi (Tam Genişlik - Net Görünüm)
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
         value=varsayilan_fiyat, 
         step=10.0, 
         format="%g",
-        help="Birim fiyat"
+        help="Güncel piyasa fiyatını buradan değiştirebilirsiniz."
     )
 
     st.markdown("---")
     
-    # 4. SATIR: Bilgi Kutucukları
+    # --- BÖLÜM 3: BİLGİ KARTLARI ---
+    # Alt tarafta düzenli bilgi kutucukları
     col_i1, col_i2 = st.columns(2)
     with col_i1:
-        st.info(f"Hız:\n{guncel_hiz}")
+        st.info(f"⚡ Hız\n{guncel_hiz}")
     with col_i2:
-        st.success(f"Birim:\n{kg_fiyati} TL")
+        st.success(f"💰 Birim\n{kg_fiyati} TL")
 
 # 4. ANA PANEL
 st.title("Profesyonel Kesim Analiz Paneli")
