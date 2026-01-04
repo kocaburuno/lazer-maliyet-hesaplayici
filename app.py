@@ -21,17 +21,21 @@ except:
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
-# --- CSS İLE STİL AYARLAMALARI (REVİZE EDİLDİ) ---
+# --- CSS İLE STİL AYARLAMALARI ---
 st.markdown("""
     <style>
-        /* 1) Sidebar üst boşluğunu azaltma */
+        /* Sidebar üst boşluğunu tamamen yok etme ve logoyu yukarı taşıma */
+        section[data-testid="stSidebar"] div.block-container {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        
+        /* Sidebar içindeki elementlerin arasını biraz açarak ferahlık sağlama */
         [data-testid="stSidebarUserContent"] {
-            padding-top: 0.5rem; /* Boşluk azaltıldı */
+            gap: 1rem;
         }
-        [data-testid="stSidebarUserContent"] .element-container:first-child {
-            margin-top: -10px; /* Logo yukarı çekildi */
-        }
-        /* Butonları eşitlemek için */
+        
+        /* Buton yüksekliklerini eşitleme */
         div.stButton > button { min-height: 50px; }
     </style>
 """, unsafe_allow_html=True)
@@ -67,19 +71,19 @@ VERİ = {
     }
 }
 
-# --- 4. SIDEBAR (REVİZE EDİLDİ) ---
+# --- 4. SIDEBAR (REVİZE EDİLDİ - GRID SİSTEMİ) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
     except:
         st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
     
-    # 2) Web Sitesi Linki (Revize Edildi: İnce font, geniş, logo rengi)
+    # URL: Şık, ince font, kurumsal renk
     st.markdown(
         """
-        <div style='text-align: center; margin-bottom: 20px;'>
+        <div style='text-align: center; margin-top: -15px; margin-bottom: 25px;'>
             <a href='https://www.alanlazer.com' target='_blank' 
-               style='text-decoration: none; color: #1C3768; font-size: 1.5em; font-weight: 300; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: 1px;'>
+               style='text-decoration: none; color: #1C3768; font-size: 1.6em; font-weight: 100; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; letter-spacing: 0.5px;'>
                 alanlazer.com
             </a>
         </div>
@@ -89,21 +93,23 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # 2) Sidebar Giriş Düzeni (Revize Edildi)
-    # Metal Türü: Tam genişlik
-    metal = st.selectbox("Metal Türü", list(VERİ.keys()))
+    # --- GİRİŞ ALANLARI: 2x2 GRID (DAHA DÜZENLİ) ---
     
-    # Kalınlık ve Adet: Yan yana eşit sütunlar
-    col_s1, col_s2 = st.columns(2)
-    with col_s1:
+    # 1. Satır: Metal ve Kalınlık
+    row1_col1, row1_col2 = st.columns(2)
+    with row1_col1:
+        metal = st.selectbox("Metal Türü", list(VERİ.keys()))
+    with row1_col2:
         kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
-    with col_s2:
-        adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
-    # Plaka Boyutu: Tam genişlik
-    plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
-    secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
-    secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
+    # 2. Satır: Plaka ve Adet
+    row2_col1, row2_col2 = st.columns(2)
+    with row2_col1:
+        plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
+        secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
+        secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
+    with row2_col2:
+        adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
     # Hız Hesaplama
     hiz_tablosu = VERİ[metal]["hizlar"]
@@ -140,9 +146,9 @@ with st.sidebar:
 
 # --- 5. ANA PANEL İÇERİĞİ ---
 
-# 5) Ana Başlık Değiştirildi
+# BAŞLIK GÜNCELLENDİ
 st.title("AI DESTEKLİ PROFESYONEL MALİYET ANALİZ PANELİ")
-# 3) Alt Başlık (st.caption) Kaldırıldı
+# Alt başlık (caption) kaldırıldı
 
 # === DURUM A: ANASAYFA (KARŞILAMA EKRANI) ===
 if st.session_state.sayfa == 'anasayfa':
@@ -153,10 +159,11 @@ if st.session_state.sayfa == 'anasayfa':
     
     # --- 1. Sütun: Fotoğraftan Analiz ---
     with c1:
-        # 4) Başlık Değiştirildi
+        # BAŞLIK GÜNCELLENDİ
         st.info("📸 **FOTOĞRAFTAN ANALİZ**")
+        # METİN GÜNCELLENDİ ("Teknik çizim" silindi)
         st.markdown("""
-        Teknik çizim, fotoğraf veya eskiz görsellerini yükleyin. AI algoritmamız kesim yollarını tanır.
+        Fotoğraf veya eskiz görsellerini yükleyin. **AI görüntü işleme algoritmamız** kesim yollarını otomatik tespit eder.
         
         **Özellikler:**
         * JPG, PNG formatı
