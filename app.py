@@ -43,22 +43,38 @@ VERİ = {
     }
 }
 
-# --- 4. SIDEBAR (KOMPAKT TASARIM - KORUNDU) ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
+    # Logo
     try:
         st.image("logo.png", use_column_width=True)
     except:
         st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
+    
+    # --- YENİ EKLENEN WEB SİTESİ LİNKİ ---
+    st.markdown(
+        """
+        <div style='text-align: center; margin-top: -10px; margin-bottom: 10px;'>
+            <a href='https://www.alanlazer.com' target='_blank' style='text-decoration: none; color: #666; font-size: 0.9em;'>
+                www.alanlazer.com
+            </a>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
         
     st.markdown("---")
     
+    # --- BÖLÜM 1: MALZEME SEÇİMİ ---
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
+    
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
+    # --- BÖLÜM 2: PLAKA VE FİYAT ---
     plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
@@ -88,16 +104,18 @@ with st.sidebar:
 
     st.markdown("---")
     
+    # --- BÖLÜM 3: BİLGİ KARTLARI ---
     col_i1, col_i2 = st.columns(2)
     with col_i1:
         st.info(f"⚡ Hız\n{guncel_hiz}")
     with col_i2:
         st.success(f"💰 Birim\n{kg_fiyati} TL")
 
-
 # --- 5. ANA PANEL İÇERİĞİ ---
 
 st.title("Profesyonel Kesim Analiz Paneli")
+# --- YENİ EKLENEN AI VURGUSU (BAŞLIK ALTI) ---
+st.caption("✨ Yapay Zeka (AI) Destekli Otomatik Maliyetlendirme ve Teklif Sistemi")
 
 # === DURUM A: ANASAYFA (KARŞILAMA EKRANI) ===
 if st.session_state.sayfa == 'anasayfa':
@@ -109,13 +127,15 @@ if st.session_state.sayfa == 'anasayfa':
     # --- Sol Sütun: Fotoğraftan Analiz ---
     with col_foto:
         st.info("📸 **FOTOĞRAFTAN ANALİZ**")
+        # --- AI VURGUSU BURADA DA VAR ---
         st.markdown("""
-        Elinizdeki teknik çizim, fotoğraf veya eskiz görselini yükleyerek otomatik maliyet hesabı yapın.
+        Teknik çizim, fotoğraf veya eskiz görsellerini yükleyin. 
+        **AI görüntü işleme algoritmamız**, kesim yollarını otomatik tespit eder.
         
         **Nasıl Çalışır?**
         1. Çizim görselini yükleyin.
         2. Parçanın yatay uzunluğunu girin.
-        3. Sistem kesim yolunu ve ağırlığı otomatik hesaplasın.
+        3. Sistem saniyeler içinde maliyeti hesaplasın.
         """)
         if st.button("FOTOĞRAF YÜKLE VE HESAPLA", use_container_width=True, type="primary"):
             sayfa_degistir('foto_analiz')
@@ -125,7 +145,7 @@ if st.session_state.sayfa == 'anasayfa':
     with col_hazir:
         st.success("🛠 **HAZIR PARÇA OLUŞTUR**")
         st.markdown("""
-        Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) ölçü girerek oluşturun.
+        Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) ölçü girerek anında oluşturun.
         
         **Nasıl Çalışır?**
         1. Parça tipini seçin (Kare/Flanş).
@@ -192,7 +212,8 @@ elif st.session_state.sayfa == 'foto_analiz':
                     cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
                     rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
                     
-                    st.image(rgb_img, caption="Analiz Edilen Parça", use_container_width=True)
+                    # --- AI VURGUSU BURADA ---
+                    st.image(rgb_img, caption="AI Tarafından Tespit Edilen Kesim Yolları", use_container_width=True)
 
                     if g_max > p_max or g_min > p_min:
                         st.error(f"⚠️ HATA: Parça ({round(gercek_genislik)}x{round(gercek_yukseklik)}mm), seçilen plakaya sığmıyor!")
