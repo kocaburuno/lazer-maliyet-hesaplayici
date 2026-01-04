@@ -45,14 +45,14 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # 1. SATIR: Metal ve Kalınlık Yan Yana
-    col_s1, col_s2 = st.columns(2)
+    # 1. SATIR: Metal ve Kalınlık Yan Yana (REVİZE: Metal ismine daha fazla yer verildi)
+    col_s1, col_s2 = st.columns([2, 1])
     with col_s1:
         metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     with col_s2:
         kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     
-    # 2. SATIR: Plaka ve Adet Yan Yana (Plaka ismi uzun olduğu için ona daha çok yer verdik)
+    # 2. SATIR: Plaka ve Adet Yan Yana
     col_s3, col_s4 = st.columns([2, 1])
     with col_s3:
         plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
@@ -77,7 +77,7 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # 3. SATIR: Fiyat Girişi (Tek başına ama kompakt)
+    # 3. SATIR: Fiyat Girişi
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
@@ -89,7 +89,7 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # 4. SATIR: Bilgi Kutucukları Yan Yana
+    # 4. SATIR: Bilgi Kutucukları
     col_i1, col_i2 = st.columns(2)
     with col_i1:
         st.info(f"Hız:\n{guncel_hiz}")
