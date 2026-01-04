@@ -3,8 +3,10 @@ import cv2
 import numpy as np
 import math
 
+# 1. SAYFA YAPILANDIRMASI (Favicon: tarayici.png)
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon="tarayici.png")
 
+# 2. SABİT PARAMETRELER
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
 
@@ -26,6 +28,7 @@ VERİ = {
     }
 }
 
+# 3. SIDEBAR
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -52,6 +55,7 @@ with st.sidebar:
 
     st.markdown("---")
     
+    # FİYAT GİRİŞİ REVİZESİ: step=10, format="%g" (virgülsüz)
     varsayilan_fiyat = 30.0
     if metal == "Siyah Sac":
         varsayilan_fiyat = 30.0
@@ -60,13 +64,21 @@ with st.sidebar:
     elif metal == "Alüminyum":
         varsayilan_fiyat = 220.0
         
-    kg_fiyati = st.number_input("Malzeme KG Fiyatı (TL)", min_value=0.0, value=varsayilan_fiyat, format="%.2f", help="Birim kilogram fiyatını buradan güncelleyebilirsiniz.")
+    kg_fiyati = st.number_input(
+        "Malzeme KG Fiyatı (TL)", 
+        min_value=0.0, 
+        value=varsayilan_fiyat, 
+        step=10.0,       # 10'ar artış
+        format="%g",     # Gereksiz sıfırları gizle
+        help="Birim kilogram fiyatını buradan güncelleyebilirsiniz."
+    )
 
     st.markdown("---")
     st.subheader("Birim Bilgiler")
     st.info(f"Kesim Hızı: {guncel_hiz} mm/dk")
     st.success(f"Hesaplanan KG Fiyatı: {kg_fiyati} TL")
 
+# 4. ANA PANEL
 st.title("Profesyonel Kesim Analiz Paneli")
 
 tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"])
@@ -74,7 +86,14 @@ tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"]
 with tab1:
     col_ref, col_hassas = st.columns(2)
     with col_ref:
-        referans_olcu = st.number_input("Parçanın En Geniş Uzunluğu (mm)", value=3295.39, format="%.2f", help="Çizimdeki parçanın en solundan en sağına olan gerçek ölçü.")
+        # REFERANS ÖLÇÜ REVİZESİ: step=10, format="%g"
+        referans_olcu = st.number_input(
+            "Parçanın En Geniş Uzunluğu (mm)", 
+            value=3295.39, 
+            step=10.0, 
+            format="%g",
+            help="Çizimdeki parçanın en solundan en sağına olan gerçek ölçü."
+        )
     with col_hassas:
         hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84, step=1)
 
@@ -146,12 +165,15 @@ with tab2:
     if sekil_tipi == "Kare / Dikdörtgen":
         c1, c2, c3 = st.columns(3)
         with c1:
-            genislik = st.number_input("Genişlik (mm)", min_value=1.0, value=100.00, format="%.2f")
+            # GENİŞLİK REVİZESİ: step=10, format="%g"
+            genislik = st.number_input("Genişlik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
         with c2:
-            yukseklik = st.number_input("Yükseklik (mm)", min_value=1.0, value=100.00, format="%.2f")
+            # YÜKSEKLİK REVİZESİ: step=10, format="%g"
+            yukseklik = st.number_input("Yükseklik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
         with c3:
             delik_sayisi = st.number_input("Delik Sayısı", min_value=0, value=0, step=1)
-            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.00, format="%.2f")
+            # DELİK ÇAPI REVİZESİ: Delik küçük olduğu için step=1 yaptım, büyük step mantıksız olabilir.
+            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.0, step=1.0, format="%g")
             
         canvas = np.zeros((400, 600, 3), dtype="uint8")
         max_dim = max(genislik, yukseklik)
@@ -196,10 +218,12 @@ with tab2:
     elif sekil_tipi == "Daire / Flanş":
         c1, c2 = st.columns(2)
         with c1:
-            cap = st.number_input("Dış Çap (mm)", min_value=1.0, value=100.00, format="%.2f")
+            # ÇAP REVİZESİ: step=10, format="%g"
+            cap = st.number_input("Dış Çap (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
         with c2:
             delik_sayisi = st.number_input("İç Delik Sayısı", min_value=0, value=1, step=1)
-            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=50.00, format="%.2f")
+            # DELİK ÇAPI: step=1
+            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=50.0, step=1.0, format="%g")
             
         canvas = np.zeros((400, 400, 3), dtype="uint8")
         r_px = 150
@@ -255,4 +279,3 @@ with tab2:
             st.write(f"- Parça Ağırlığı: {round(agirlik, 2)} kg")
             st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
             st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
-            
