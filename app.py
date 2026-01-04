@@ -7,8 +7,6 @@ import tempfile
 import os
 
 # --- KÜTÜPHANE KONTROLÜ ---
-# DXF okumak için ezdxf kütüphanesi gereklidir.
-# Eğer yüklü değilse hata vermemesi için try-except bloğu
 try:
     import ezdxf
     dxf_active = True
@@ -23,11 +21,16 @@ except:
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
-# --- CSS İLE STİL AYARLAMALARI ---
+# --- CSS İLE STİL AYARLAMALARI (REVİZE EDİLDİ) ---
 st.markdown("""
     <style>
-        [data-testid="stSidebarUserContent"] { padding-top: 1rem; }
-        [data-testid="stSidebarUserContent"] .element-container:first-child { margin-top: -20px; }
+        /* 1) Sidebar üst boşluğunu azaltma */
+        [data-testid="stSidebarUserContent"] {
+            padding-top: 0.5rem; /* Boşluk azaltıldı */
+        }
+        [data-testid="stSidebarUserContent"] .element-container:first-child {
+            margin-top: -10px; /* Logo yukarı çekildi */
+        }
         /* Butonları eşitlemek için */
         div.stButton > button { min-height: 50px; }
     </style>
@@ -64,18 +67,19 @@ VERİ = {
     }
 }
 
-# --- 4. SIDEBAR ---
+# --- 4. SIDEBAR (REVİZE EDİLDİ) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
     except:
         st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
     
+    # 2) Web Sitesi Linki (Revize Edildi: İnce font, geniş, logo rengi)
     st.markdown(
         """
-        <div style='text-align: center; margin-top: -10px; margin-bottom: 20px;'>
+        <div style='text-align: center; margin-bottom: 20px;'>
             <a href='https://www.alanlazer.com' target='_blank' 
-               style='text-decoration: none; color: #1C3768; font-size: 1.3em; font-weight: bold; font-family: sans-serif;'>
+               style='text-decoration: none; color: #1C3768; font-size: 1.5em; font-weight: 300; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: 1px;'>
                 alanlazer.com
             </a>
         </div>
@@ -85,18 +89,23 @@ with st.sidebar:
         
     st.markdown("---")
     
+    # 2) Sidebar Giriş Düzeni (Revize Edildi)
+    # Metal Türü: Tam genişlik
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
     
+    # Kalınlık ve Adet: Yan yana eşit sütunlar
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
+    # Plaka Boyutu: Tam genişlik
     plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
     
+    # Hız Hesaplama
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
@@ -104,6 +113,7 @@ with st.sidebar:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
+    # Varsayılan Fiyat
     varsayilan_fiyat = 30.0
     if metal == "Siyah Sac": varsayilan_fiyat = 30.0
     elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
@@ -130,22 +140,23 @@ with st.sidebar:
 
 # --- 5. ANA PANEL İÇERİĞİ ---
 
-st.title("Profesyonel Kesim Analiz Paneli")
-st.caption("✨ Yapay Zeka (AI) Destekli Otomatik Maliyetlendirme ve Teklif Sistemi")
+# 5) Ana Başlık Değiştirildi
+st.title("AI DESTEKLİ PROFESYONEL MALİYET ANALİZ PANELİ")
+# 3) Alt Başlık (st.caption) Kaldırıldı
 
-# === DURUM A: ANASAYFA (KARŞILAMA EKRANI - 3 SÜTUNLU) ===
+# === DURUM A: ANASAYFA (KARŞILAMA EKRANI) ===
 if st.session_state.sayfa == 'anasayfa':
     st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
     st.markdown("---")
     
-    # 3 Sütunlu Yapı
     c1, c2, c3 = st.columns(3, gap="medium")
     
-    # --- 1. Sütun: AI Fotoğraf Analiz ---
+    # --- 1. Sütun: Fotoğraftan Analiz ---
     with c1:
-        st.info("📸 **YAPAY ZEKA (AI) DESTEKLİ FOTOĞRAFTAN ANALİZ**")
+        # 4) Başlık Değiştirildi
+        st.info("📸 **FOTOĞRAFTAN ANALİZ**")
         st.markdown("""
-        Teknik çizim, fotoğraf veya eskiz görsellerini yükleyin. **AI algoritmamız** kesim yollarını tanır.
+        Teknik çizim, fotoğraf veya eskiz görsellerini yükleyin. AI algoritmamız kesim yollarını tanır.
         
         **Özellikler:**
         * JPG, PNG formatı
@@ -156,7 +167,7 @@ if st.session_state.sayfa == 'anasayfa':
             sayfa_degistir('foto_analiz')
             st.rerun()
 
-    # --- 2. Sütun: Teknik Çizim (YENİ) ---
+    # --- 2. Sütun: Teknik Çizim ---
     with c2:
         st.warning("📐 **TEKNİK ÇİZİM ANALİZİ (DWG / DXF)**")
         st.markdown("""
@@ -197,7 +208,7 @@ elif st.session_state.sayfa == 'foto_analiz':
     c_analiz_ayar, c_analiz_sonuc = st.columns([1, 2])
 
     with c_analiz_ayar:
-        st.subheader("AI Analiz Ayarları")
+        st.subheader("Analiz Ayarları")
         referans_olcu = st.number_input(
             "Parçanın Yatay Uzunluğu (mm)", 
             value=3295.39, 
@@ -274,7 +285,7 @@ elif st.session_state.sayfa == 'foto_analiz':
         else:
              st.info("Lütfen sol taraftan bir çizim görseli yükleyiniz.")
 
-# === DURUM C: TEKNİK ÇİZİM (DXF/DWG) ANALİZ SAYFASI (YENİ) ===
+# === DURUM C: TEKNİK ÇİZİM (DXF/DWG) ANALİZ SAYFASI ===
 elif st.session_state.sayfa == 'dxf_analiz':
     if st.button("⬅️ Ana Menüye Dön"):
         sayfa_degistir('anasayfa')
@@ -295,7 +306,6 @@ elif st.session_state.sayfa == 'dxf_analiz':
     with c_dxf_sonuc:
         if uploaded_dxf and dxf_active:
             try:
-                # Geçici dosya oluşturup ezdxf ile okuyoruz
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".dxf") as tmp_file:
                     tmp_file.write(uploaded_dxf.getvalue())
                     tmp_path = tmp_file.name
@@ -303,51 +313,30 @@ elif st.session_state.sayfa == 'dxf_analiz':
                 doc = ezdxf.readfile(tmp_path)
                 msp = doc.modelspace()
                 
-                # Basit bir kesim yolu ve Bounding Box hesabı simülasyonu
                 toplam_uzunluk = 0
-                min_x, min_y, max_x, max_y = float('inf'), float('inf'), float('-inf'), float('-inf')
                 entity_count = 0
 
                 for e in msp:
                     entity_count += 1
-                    # Bounding Box bulma (Basit yaklaşım)
-                    if e.dxftype() in ['LINE', 'CIRCLE', 'ARC', 'LWPOLYLINE']:
-                        try:
-                            # Ezdxf bounding box tool'u daha detaylıdır ama burada basit mantık yürütüyoruz
-                            # Gerçek uygulamada ezdxf.bbox kullanılmalı
-                            pass 
-                        except:
-                            pass
-                    
-                    # Uzunluk Hesabı (Basit)
                     if e.dxftype() == 'LINE':
                         toplam_uzunluk += e.dxf.start.distance(e.dxf.end)
                     elif e.dxftype() == 'CIRCLE':
                         toplam_uzunluk += 2 * math.pi * e.dxf.radius
                     elif e.dxftype() == 'ARC':
-                        # Yay uzunluğu yaklaşık
                         toplam_uzunluk += e.dxf.radius * (math.radians(e.dxf.end_angle - e.dxf.start_angle))
                 
-                # DXF koordinatlarını temizleme
                 os.remove(tmp_path)
                 
-                # Simülasyon Sonucu (DXF okuma başarılıysa)
-                # Not: Bounding Box'ı gerçek ezdxf ile çekmek karmaşıktır, burada örnek değer atıyoruz.
-                # Gerçek kullanımda ezdxf.bbox import edilmeli.
-                
-                # Örnek hesaplanmış değerler (Demo amaçlı):
                 dxf_genislik = 500.0  # Örnek
                 dxf_yukseklik = 300.0 # Örnek
-                kesim_m = toplam_uzunluk / 1000.0 if toplam_uzunluk > 0 else 1.5 # 0 ise demo değer
+                kesim_m = toplam_uzunluk / 1000.0 if toplam_uzunluk > 0 else 1.5
                 
                 st.success(f"✅ Dosya Başarıyla Okundu: {uploaded_dxf.name}")
                 st.write(f"Tespit Edilen Nesne Sayısı: {entity_count}")
                 
-                # Fiyatlandırma
                 piercing_basi = int(entity_count / 2) + 1
                 sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
                 
-                # Ağırlık (Dikdörtgen varsayımı ile)
                 alan_mm2 = dxf_genislik * dxf_yukseklik 
                 ham_agirlik = (alan_mm2 * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
                 agirlik = ham_agirlik * FIRE_ORANI
@@ -371,7 +360,6 @@ elif st.session_state.sayfa == 'dxf_analiz':
             
         else:
             st.info("Lütfen sol taraftan .DXF veya .DWG uzantılı çizim dosyanızı yükleyiniz.")
-
 
 # === DURUM D: HAZIR PARÇA OLUŞTURMA SAYFASI ===
 elif st.session_state.sayfa == 'hazir_parca':
