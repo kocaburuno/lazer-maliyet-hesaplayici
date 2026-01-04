@@ -36,7 +36,7 @@ VERİ = {
     }
 }
 
-# 3. SIDEBAR
+# 3. SIDEBAR (KOMPAKT TASARIM)
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -45,15 +45,23 @@ with st.sidebar:
         
     st.markdown("---")
     
-    metal = st.selectbox("Metal Türü", list(VERİ.keys()))
-    kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
+    # 1. SATIR: Metal ve Kalınlık Yan Yana
+    col_s1, col_s2 = st.columns(2)
+    with col_s1:
+        metal = st.selectbox("Metal Türü", list(VERİ.keys()))
+    with col_s2:
+        kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     
-    plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
-    secilen_plaka_adi = st.selectbox("Plaka Boyutu (mm)", list(plaka_secenekleri.keys()))
-    secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
+    # 2. SATIR: Plaka ve Adet Yan Yana (Plaka ismi uzun olduğu için ona daha çok yer verdik)
+    col_s3, col_s4 = st.columns([2, 1])
+    with col_s3:
+        plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
+        secilen_plaka_adi = st.selectbox("Plaka", list(plaka_secenekleri.keys()))
+        secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
+    with col_s4:
+        adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
-    adet = st.number_input("Parça Adedi", min_value=1, value=1, step=1)
-    
+    # Hız Belirleme
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
@@ -61,43 +69,44 @@ with st.sidebar:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
+    # Fiyat Belirleme
+    varsayilan_fiyat = 30.0
+    if metal == "Siyah Sac": varsayilan_fiyat = 30.0
+    elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
+    elif metal == "Alüminyum": varsayilan_fiyat = 220.0
+    
     st.markdown("---")
     
-    varsayilan_fiyat = 30.0
-    if metal == "Siyah Sac":
-        varsayilan_fiyat = 30.0
-    elif metal == "Paslanmaz":
-        varsayilan_fiyat = 150.0
-    elif metal == "Alüminyum":
-        varsayilan_fiyat = 220.0
-        
+    # 3. SATIR: Fiyat Girişi (Tek başına ama kompakt)
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
         value=varsayilan_fiyat, 
         step=10.0, 
         format="%g",
-        help="Birim kilogram fiyatını buradan güncelleyebilirsiniz."
+        help="Birim fiyat"
     )
 
     st.markdown("---")
-    st.subheader("Birim Bilgiler")
-    st.info(f"Kesim Hızı: {guncel_hiz} mm/dk")
-    st.success(f"Hesaplanan KG Fiyatı: {kg_fiyati} TL")
+    
+    # 4. SATIR: Bilgi Kutucukları Yan Yana
+    col_i1, col_i2 = st.columns(2)
+    with col_i1:
+        st.info(f"Hız:\n{guncel_hiz}")
+    with col_i2:
+        st.success(f"Birim:\n{kg_fiyati} TL")
 
 # 4. ANA PANEL
 st.title("Profesyonel Kesim Analiz Paneli")
 
 tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"])
 
-# --- TAB 1: FOTO ANALİZ (GÜNCELLENMİŞ İSİMLENDİRME) ---
+# --- TAB 1: FOTO ANALİZ ---
 with tab1:
     c_analiz_ayar, c_analiz_sonuc = st.columns([1, 2])
 
     with c_analiz_ayar:
         st.subheader("Analiz Ayarları")
-        
-        # --- İSİM REVİZESİ BURADA YAPILDI ---
         referans_olcu = st.number_input(
             "Parçanın Yatay Uzunluğu (mm)", 
             value=3295.39, 
@@ -105,8 +114,6 @@ with tab1:
             format="%g",
             help="Yüklediğiniz çizimdeki parçanın soldan sağa (yatay) olan gerçek uzunluğunu giriniz."
         )
-        # ------------------------------------
-        
         hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84, step=1)
         st.divider()
         uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
@@ -133,7 +140,6 @@ with tab1:
                     all_pts = np.concatenate(valid_contour_list)
                     x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
                     
-                    # Oranlama artık Yatay Uzunluk (Width) üzerinden yapılıyor
                     oran = referans_olcu / w_px
                     gercek_genislik = w_px * oran
                     gercek_yukseklik = h_px * oran
