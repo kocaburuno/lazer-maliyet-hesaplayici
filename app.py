@@ -6,14 +6,14 @@ import math
 import tempfile
 import os
 
-# --- 0. KÜTÜPHANE KONTROLÜ ---
+# --- KÜTÜPHANE KONTROLÜ ---
 try:
     import ezdxf
     dxf_active = True
 except ImportError:
     dxf_active = False
 
-# --- 1. SAYFA AYARLARI VE FAVICON ---
+# --- 1. AYARLAR VE FAVICON ---
 try:
     fav_icon = Image.open("tarayici.png")
 except:
@@ -21,10 +21,9 @@ except:
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
-# --- 2. CSS STİL AYARLAMALARI (TAM KAPSAMLI) ---
+# --- CSS İLE STİL AYARLAMALARI ---
 st.markdown("""
     <style>
-        /* Sidebar Üst Boşluk Sıfırlama */
         section[data-testid="stSidebar"] div.block-container {
             padding-top: 0rem;
         }
@@ -32,36 +31,17 @@ st.markdown("""
             margin-top: 10px;
         }
         div.stButton > button { min-height: 50px; }
-
-        /* Analiz Detay Listesi Tasarımı (Alt Alta Şık Görünüm) */
-        .analiz-bilgi-kutu {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 12px;
-            border-left: 5px solid #1c3768;
-            margin-top: 10px;
-        }
-        .analiz-bilgi-satir {
-            font-size: 0.9rem;
-            color: #555;
-            margin-bottom: 5px;
-            line-height: 1.4;
-        }
-        .analiz-bilgi-deger {
-            font-weight: bold;
-            color: #111;
-        }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SAYFA DURUM YÖNETİMİ ---
+# --- 2. SAYFA DURUM YÖNETİMİ ---
 if 'sayfa' not in st.session_state:
     st.session_state.sayfa = 'anasayfa'
 
 def sayfa_degistir(sayfa_adi):
     st.session_state.sayfa = sayfa_adi
 
-# --- 4. SABİT PARAMETRELER ---
+# --- 3. SABİT PARAMETRELER ---
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
 FIRE_ORANI = 1.15 
@@ -85,7 +65,7 @@ VERİ = {
     }
 }
 
-# --- 5. SIDEBAR ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -124,25 +104,38 @@ with st.sidebar:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
-    varsayilan_fiyat = 30.0 if metal == "Siyah Sac" else (150.0 if metal == "Paslanmaz" else 220.0)
+    varsayilan_fiyat = 30.0
+    if metal == "Siyah Sac": varsayilan_fiyat = 30.0
+    elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
+    elif metal == "Alüminyum": varsayilan_fiyat = 220.0
     
     st.markdown("---")
-    kg_fiyati = st.number_input("Malzeme KG Fiyatı (TL)", min_value=0.0, value=varsayilan_fiyat, step=10.0, format="%g")
+    
+    kg_fiyati = st.number_input(
+        "Malzeme KG Fiyatı (TL)", 
+        min_value=0.0, 
+        value=varsayilan_fiyat, 
+        step=10.0, 
+        format="%g"
+    )
 
     st.markdown("---")
+    
     col_i1, col_i2 = st.columns(2)
     with col_i1:
         st.info(f"⚡ Hız\n{guncel_hiz}")
     with col_i2:
         st.success(f"💰 Birim\n{kg_fiyati} TL")
 
-# --- 6. ANA PANEL İÇERİĞİ ---
+# --- 5. ANA PANEL İÇERİĞİ ---
+
 st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
 
 # === DURUM A: ANASAYFA ===
 if st.session_state.sayfa == 'anasayfa':
     st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
     st.markdown("---")
+    
     c1, c2, c3 = st.columns(3, gap="medium")
     
     with c1:
@@ -176,7 +169,7 @@ if st.session_state.sayfa == 'anasayfa':
     with c3:
         st.success("🛠 **HAZIR PARÇA OLUŞTUR**")
         st.markdown("""
-        Çiziminiz yoksa; standart geometrik şekilleri manuel oluşturun.
+        Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) manuel oluşturun.
         
         **Özellikler:**
         * Kare, Dikdörtgen, Daire
@@ -192,165 +185,222 @@ elif st.session_state.sayfa == 'foto_analiz':
     if st.button("⬅️ Ana Menüye Dön"):
         sayfa_degistir('anasayfa')
         st.rerun()
+    
     st.divider()
-    c_ayar, c_sonuc = st.columns([1, 2])
+    
+    c_analiz_ayar, c_analiz_sonuc = st.columns([1, 2])
 
-    with c_ayar:
+    with c_analiz_ayar:
         st.subheader("Analiz Ayarları")
-        referans_olcu = st.number_input("Parçanın Yatay Uzunluğu (mm)", value=100.0, step=10.0, format="%g")
+        # 1) Yatay Uzunluk Default 100 olarak güncellendi
+        referans_olcu = st.number_input(
+            "Parçanın Yatay Uzunluğu (mm)", 
+            value=100.0, 
+            step=10.0, 
+            format="%g",
+            help="Yüklediğiniz çizimdeki parçanın soldan sağa (yatay) olan gerçek uzunluğunu giriniz."
+        )
+        # 2) ve 3) Hassasiyet yazısı ve default değeri (80) güncellendi
         hassasiyet = st.slider("Hassasiyet (Kesim Kontur Yakalama)", 50, 255, 80, step=1)
         st.divider()
         uploaded_file = st.file_uploader("Görsel Yükle (JPG, PNG)", type=['jpg', 'png', 'jpeg'])
 
-    with c_sonuc:
+    with c_analiz_sonuc:
         if uploaded_file:
             file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
             original_img = cv2.imdecode(file_bytes, 1)
             h_img, w_img = original_img.shape[:2] 
+            
             gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
             _, binary = cv2.threshold(gray, hassasiyet, 255, cv2.THRESH_BINARY_INV)
             contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
             
             if contours and hierarchy is not None:
-                valid_cnts = []
+                valid_contour_list = []
                 for i, cnt in enumerate(contours):
-                    bx, by, bw, bh = cv2.boundingRect(cnt)
-                    # --- AI ÇERÇEVE FİLTRESİ ---
-                    if bw > w_img * 0.96 or bh > h_img * 0.96: continue
+                    x, y, w, h = cv2.boundingRect(cnt)
+                    if w > w_img * 0.98 and h > h_img * 0.98: continue
                     if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
-                        valid_cnts.append(cnt)
+                        valid_contour_list.append(cnt)
 
-                if valid_cnts:
-                    all_pts = np.concatenate(valid_cnts)
-                    x_r, y_r, w_px, h_px = cv2.boundingRect(all_pts)
+                if valid_contour_list:
+                    all_pts = np.concatenate(valid_contour_list)
+                    x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
+                    
                     oran = referans_olcu / w_px
-                    g_mm, y_mm = w_px * oran, h_px * oran
+                    gercek_genislik = w_px * oran
+                    gercek_yukseklik = h_px * oran
                     
                     display_img = original_img.copy()
-                    cv2.drawContours(display_img, valid_cnts, -1, (0, 255, 0), 2)
-                    st.image(cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB), caption="AI Analiz Sonucu", use_container_width=True)
+                    cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
+                    rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
+                    
+                    st.image(rgb_img, caption="AI Tarafından Tespit Edilen Kesim Yolları", use_container_width=True)
 
-                    kesim_m = (sum([cv2.arcLength(c, True) for c in valid_cnts]) * oran) / 1000
-                    kontur_ad = len(valid_cnts)
-                    sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * PIERCING_SURESI / 60)
-                    agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
-                    fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+                    p_max, p_min = max(secilen_p_en, secilen_p_boy), min(secilen_p_en, secilen_p_boy)
+                    g_max, g_min = max(gercek_genislik, gercek_yukseklik), min(gercek_genislik, gercek_yukseklik)
 
-                    st.markdown("### 📋 Teklif Özeti")
-                    cd, cf = st.columns([1, 1])
-                    with cd:
-                        st.markdown(f"""<div class="analiz-bilgi-kutu">
-                            <div class="analiz-bilgi-satir">📏 Ölçü: <span class="analiz-bilgi-deger">{round(g_mm, 1)} x {round(y_mm, 1)} mm</span></div>
-                            <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
-                            <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{kontur_ad * adet} ad</span></div>
-                        </div>""", unsafe_allow_html=True)
-                    with cf:
-                        st.metric("KDV HARİÇ", f"{round(fiyat, 2)} TL")
-                        st.success(f"KDV DAHİL: {round(fiyat * KDV_ORANI, 2)} TL")
+                    if g_max > p_max or g_min > p_min:
+                        st.error(f"⚠️ HATA: Parça ({round(gercek_genislik)}x{round(gercek_yukseklik)}mm), seçilen plakaya sığmıyor!")
+                    else:
+                        toplam_yol_piksel = sum([cv2.arcLength(c, True) for c in valid_contour_list])
+                        piercing_basi = len(valid_contour_list)
+                        kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
+                        sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+                        
+                        ham_agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+                        agirlik = ham_agirlik * FIRE_ORANI
+                        
+                        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+                        kdvli_fiyat = toplam_fiyat * KDV_ORANI
 
-# === DURUM C: TEKNİK ÇİZİM ANALİZ ===
+                        st.markdown("### 📋 Teklif Özeti")
+                        m1, m2, m3, m4 = st.columns([1, 1, 1, 1.5])
+                        m1.metric("Ölçü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)}")
+                        m2.metric("Kesim", f"{round(kesim_yolu_m * adet, 2)} m")
+                        m3.metric("Piercing", f"{piercing_basi * adet} ad")
+                        
+                        m4.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
+                        m4.markdown(f"<span style='color:green; font-weight:bold;'>KDV DAHİL: {round(kdvli_fiyat, 2)} TL</span>", unsafe_allow_html=True)
+                        
+                        with st.expander("🔍 Teknik Detaylar"):
+                            st.write(f"- Parça Ağırlığı (+%15 Fire): {round(agirlik, 2)} kg")
+                            st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
+                            st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
+        else:
+             st.info("Lütfen sol taraftan bir çizim görseli yükleyiniz.")
+
+# === DURUM C: TEKNİK ÇİZİM ANALİZ SAYFASI ===
 elif st.session_state.sayfa == 'dxf_analiz':
-    if st.button("⬅️ Ana Menüye Dön"): sayfa_degistir('anasayfa'); st.rerun()
+    if st.button("⬅️ Ana Menüye Dön"):
+        sayfa_degistir('anasayfa')
+        st.rerun()
+
     st.divider()
     c_dxf_ayar, c_dxf_sonuc = st.columns([1, 2])
+
     with c_dxf_ayar:
         st.subheader("Teknik Çizim Yükle")
-        uploaded_dxf = st.file_uploader("Dosya Seç (DXF)", type=['dxf', 'dwg'])
+        if not dxf_active:
+            st.warning("⚠️ DXF modülü için 'ezdxf' kütüphanesi gereklidir.")
+        
+        uploaded_dxf = st.file_uploader("Dosya Seç (DXF Önerilir)", type=['dxf', 'dwg'])
 
     with c_dxf_sonuc:
         if uploaded_dxf and dxf_active:
             try:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".dxf") as tmp:
-                    tmp.write(uploaded_dxf.getvalue()); tmp_path = tmp.name
-                doc = ezdxf.readfile(tmp_path); msp = doc.modelspace(); os.remove(tmp_path)
-                
-                uzunluk = 0
-                ent_count = 0
-                for e in msp:
-                    ent_count += 1
-                    if e.dxftype() == 'LINE': uzunluk += e.dxf.start.distance(e.dxf.end)
-                    elif e.dxftype() == 'CIRCLE': uzunluk += 2 * math.pi * e.dxf.radius
-                    elif e.dxftype() == 'ARC': uzunluk += e.dxf.radius * (math.radians(e.dxf.end_angle - e.dxf.start_angle))
-                
-                kesim_m = uzunluk / 1000 if uzunluk > 0 else 1.5
-                kontur_ad = int(ent_count / 2) + 1
-                sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * PIERCING_SURESI / 60)
-                agirlik = (500 * 300 * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
-                fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
-                
-                st.success(f"✅ Dosya Okundu: {uploaded_dxf.name}")
-                st.markdown("### 📋 Teklif Özeti")
-                cd_d, cf_d = st.columns([1, 1])
-                with cd_d:
-                    st.markdown(f"""<div class="analiz-bilgi-kutu">
-                        <div class="analiz-bilgi-satir">📏 Tahmini Ölçü: <span class="analiz-bilgi-deger">500 x 300 mm</span></div>
-                        <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
-                        <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{kontur_ad * adet} ad</span></div>
-                    </div>""", unsafe_allow_html=True)
-                with cf_d:
-                    st.metric("KDV HARİÇ", f"{round(fiyat, 2)} TL")
-                    st.success(f"KDV DAHİL: {round(fiyat * KDV_ORANI, 2)} TL")
-            except Exception as e: st.error(f"Hata: {e}")
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".dxf") as tmp_file:
+                    tmp_file.write(uploaded_dxf.getvalue())
+                    tmp_path = tmp_file.name
 
-# === DURUM D: HAZIR PARÇA OLUŞTURMA ===
+                doc = ezdxf.readfile(tmp_path)
+                msp = doc.modelspace()
+                
+                toplam_uzunluk = 0
+                entity_count = 0
+
+                for e in msp:
+                    entity_count += 1
+                    if e.dxftype() == 'LINE':
+                        toplam_uzunluk += e.dxf.start.distance(e.dxf.end)
+                    elif e.dxftype() == 'CIRCLE':
+                        toplam_uzunluk += 2 * math.pi * e.dxf.radius
+                    elif e.dxftype() == 'ARC':
+                        toplam_uzunluk += e.dxf.radius * (math.radians(e.dxf.end_angle - e.dxf.start_angle))
+                
+                os.remove(tmp_path)
+                
+                dxf_genislik, dxf_yukseklik = 500.0, 300.0
+                kesim_m = toplam_uzunluk / 1000.0 if toplam_uzunluk > 0 else 1.5
+                piercing_basi = int(entity_count / 2) + 1
+                sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+                
+                ham_agirlik = (dxf_genislik * dxf_yukseklik * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
+                agirlik = ham_agirlik * FIRE_ORANI
+                toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+                kdvli_fiyat = toplam_fiyat * KDV_ORANI
+                
+                st.success(f"✅ Dosya Başarıyla Okundu: {uploaded_dxf.name}")
+                st.markdown("### 📋 Teknik Çizim Teklifi")
+                m1, m2, m3, m4 = st.columns([1, 1, 1, 1.5])
+                m1.metric("Tahmini Ölçü", f"{dxf_genislik}x{dxf_yukseklik}")
+                m2.metric("Net Kesim", f"{round(kesim_m * adet, 2)} m")
+                m3.metric("Nesne/Delik", f"{piercing_basi * adet}")
+                m4.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
+                m4.markdown(f"<span style='color:green; font-weight:bold;'>KDV DAHİL: {round(kdvli_fiyat, 2)} TL</span>", unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Hata: {e}")
+        else:
+            st.info("Lütfen .DXF veya .DWG uzantılı çizim dosyanızı yükleyiniz.")
+
+# === DURUM D: HAZIR PARÇA OLUŞTURMA SAYFASI ===
 elif st.session_state.sayfa == 'hazir_parca':
-    if st.button("⬅️ Ana Menüye Dön"): sayfa_degistir('anasayfa'); st.rerun()
+    if st.button("⬅️ Ana Menüye Dön"):
+        sayfa_degistir('anasayfa')
+        st.rerun()
+    
     st.divider()
     c_ayar, c_sonuc = st.columns([1, 2])
     
     with c_ayar:
         st.subheader("Parça Ayarları")
         sekil_tipi = st.radio("Parça Tipi", ["Kare / Dikdörtgen", "Daire / Flanş"])
+        st.divider()
+        
         if sekil_tipi == "Kare / Dikdörtgen":
-            genislik = st.number_input("Genişlik (mm)", 1.0, value=100.0)
-            yukseklik = st.number_input("Yükseklik (mm)", 1.0, value=100.0)
-            d_ad = st.number_input("Delik Sayısı", 0, 10)
-            d_cap = st.number_input("Delik Çapı (mm)", 0.0, 10.0)
+            genislik = st.number_input("Genişlik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
+            yukseklik = st.number_input("Yükseklik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
+            delik_sayisi = st.number_input("Delik Sayısı", min_value=0, value=0, step=1)
+            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.0, step=1.0, format="%g")
             
-            # --- CANVAS ÇİZİM (KARE) ---
             canvas = np.zeros((300, 600, 3), dtype="uint8")
             max_dim = max(genislik, yukseklik)
             scale = 250 / max_dim
             w_px, h_px = int(genislik * scale), int(yukseklik * scale)
             start_x, start_y = (600 - w_px) // 2, (300 - h_px) // 2
             cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0, 255, 0), 2)
-            if d_ad > 0 and d_cap > 0:
-                d_px_r = int((d_cap * scale) / 2)
-                cv2.circle(canvas, (300, 150), d_px_r, (0, 255, 0), 2)
             
-            kesim_m = (2 * (genislik + yukseklik) + d_ad * math.pi * d_cap) / 1000
-            alan = (genislik * yukseklik) - d_ad * math.pi * (d_cap/2)**2
-            k_ad = 1 + d_ad
-        else:
-            cap = st.number_input("Dış Çap (mm)", 1.0, value=100.0)
-            d_ad = st.number_input("Delik Sayısı", 0, 1)
-            d_cap = st.number_input("Delik Çapı (mm)", 0.0, 50.0)
+            if delik_sayisi > 0 and delik_capi > 0:
+                d_px_r = int((delik_capi * scale) / 2)
+                padding = d_px_r + 10 
+                if delik_sayisi == 1: cv2.circle(canvas, (300, 150), d_px_r, (0, 255, 0), 2)
+                else:
+                    coords = [(start_x + padding, start_y + padding), (start_x + w_px - padding, start_y + padding)]
+                    for i in range(min(delik_sayisi, 2)): cv2.circle(canvas, coords[i], d_px_r, (0, 255, 0), 2)
+
+            toplam_kesim_mm = 2 * (genislik + yukseklik) + delik_sayisi * (math.pi * delik_capi)
+            net_alan_mm2 = (genislik * yukseklik) - delik_sayisi * (math.pi * (delik_capi/2)**2)
+            piercing_sayisi = 1 + delik_sayisi
+
+        elif sekil_tipi == "Daire / Flanş":
+            cap = st.number_input("Dış Çap (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
+            delik_sayisi = st.number_input("İç Delik Sayısı", min_value=0, value=1, step=1)
+            delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=50.0, step=1.0, format="%g")
             
-            # --- CANVAS ÇİZİM (DAİRE) ---
             canvas = np.zeros((300, 400, 3), dtype="uint8")
-            cv2.circle(canvas, (200, 150), 120, (0, 255, 0), 2)
-            if d_ad > 0 and d_cap > 0:
-                d_px_r = int(((d_cap / cap) * 120 * 2) / 2)
-                cv2.circle(canvas, (200, 150), d_px_r, (0, 255, 0), 2)
+            r_px, center = 120, (200, 150)
+            cv2.circle(canvas, center, r_px, (0, 255, 0), 2)
+            if delik_sayisi > 0 and delik_capi > 0:
+                d_px_r = int(((delik_capi / cap) * r_px * 2) / 2)
+                cv2.circle(canvas, center, d_px_r, (0, 255, 0), 2)
             
-            kesim_m = (math.pi * cap + d_ad * math.pi * d_cap) / 1000
-            alan = math.pi*(cap/2)**2 - d_ad * math.pi * (d_cap/2)**2
-            k_ad = 1 + d_ad; genislik, yukseklik = cap, cap
+            toplam_kesim_mm = math.pi * cap + delik_sayisi * (math.pi * delik_capi)
+            net_alan_mm2 = math.pi * (cap/2)**2 - delik_sayisi * (math.pi * (delik_capi/2)**2)
+            piercing_sayisi = 1 + delik_sayisi
+            genislik, yukseklik = cap, cap
 
     with c_sonuc:
         st.image(canvas, caption=f"{genislik}x{yukseklik}mm", use_container_width=True)
-        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (k_ad * adet * PIERCING_SURESI / 60)
-        agirlik = (alan * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
-        fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+        kesim_m = toplam_kesim_mm / 1000
+        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * PIERCING_SURESI / 60)
+        agirlik = (net_alan_mm2 * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
+        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+        kdvli_fiyat = toplam_fiyat * KDV_ORANI
         
         st.markdown("### 📋 Teklif Özeti")
-        cd_h, cf_h = st.columns([1, 1])
-        with cd_h:
-            st.markdown(f"""<div class="analiz-bilgi-kutu">
-                <div class="analiz-bilgi-satir">📏 Ölçü: <span class="analiz-bilgi-deger">{genislik} x {yukseklik} mm</span></div>
-                <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
-                <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{k_ad * adet} ad</span></div>
-            </div>""", unsafe_allow_html=True)
-        with cf_h:
-            st.metric("KDV HARİÇ", f"{round(fiyat, 2)} TL")
-            st.success(f"KDV DAHİL: {round(fiyat * KDV_ORANI, 2)} TL")
+        m1, m2, m3, m4 = st.columns([1, 1, 1, 1.5])
+        m1.metric("Ölçü", f"{genislik}x{yukseklik}")
+        m2.metric("Kesim", f"{round(kesim_m * adet, 2)} m")
+        m3.metric("Piercing", f"{piercing_sayisi * adet} ad")
+        m4.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
+        m4.markdown(f"<span style='color:green; font-weight:bold;'>KDV DAHİL: {round(kdvli_fiyat, 2)} TL</span>", unsafe_allow_html=True)
