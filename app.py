@@ -90,20 +90,23 @@ st.title("Profesyonel Kesim Analiz Paneli")
 
 tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"])
 
-# --- TAB 1: FOTO ANALİZ (YENİ KOMPAKT TASARIM) ---
+# --- TAB 1: FOTO ANALİZ (GÜNCELLENMİŞ İSİMLENDİRME) ---
 with tab1:
-    # Sayfayı iki ana sütuna bölüyoruz: Sol (Ayarlar) - Sağ (Görsel+Sonuç)
     c_analiz_ayar, c_analiz_sonuc = st.columns([1, 2])
 
     with c_analiz_ayar:
         st.subheader("Analiz Ayarları")
+        
+        # --- İSİM REVİZESİ BURADA YAPILDI ---
         referans_olcu = st.number_input(
-            "Parçanın En Geniş Uzunluğu (mm)", 
+            "Parçanın Yatay Uzunluğu (mm)", 
             value=3295.39, 
             step=10.0, 
             format="%g",
-            help="Çizimdeki parçanın en solundan en sağına olan gerçek ölçü."
+            help="Yüklediğiniz çizimdeki parçanın soldan sağa (yatay) olan gerçek uzunluğunu giriniz."
         )
+        # ------------------------------------
+        
         hassasiyet = st.slider("Hassasiyet (Izgara Temizleme)", 50, 255, 84, step=1)
         st.divider()
         uploaded_file = st.file_uploader("Çizim Fotoğrafını Yükle", type=['jpg', 'png', 'jpeg'])
@@ -130,6 +133,7 @@ with tab1:
                     all_pts = np.concatenate(valid_contour_list)
                     x_real, y_real, w_px, h_px = cv2.boundingRect(all_pts)
                     
+                    # Oranlama artık Yatay Uzunluk (Width) üzerinden yapılıyor
                     oran = referans_olcu / w_px
                     gercek_genislik = w_px * oran
                     gercek_yukseklik = h_px * oran
@@ -141,7 +145,6 @@ with tab1:
                     cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
                     rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
                     
-                    # Görseli Sağ Sütunda Göster
                     st.image(rgb_img, caption="Analiz Edilen Parça", use_container_width=True)
 
                     if g_max > p_max or g_min > p_min:
@@ -152,14 +155,12 @@ with tab1:
                         kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
                         sure_dk = (kesim_yolu_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
                         
-                        # Fireli Ağırlık Hesabı
                         ham_agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"]) / 1e6
                         agirlik = ham_agirlik * FIRE_ORANI
                         
                         toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
                         kdvli_fiyat = toplam_fiyat * KDV_ORANI
 
-                        # Sonuçları Kompakt Göster
                         st.markdown("### 📋 Teklif Özeti")
                         m1, m2, m3, m4 = st.columns([1, 1, 1, 1.5])
                         m1.metric("Ölçü (GxY)", f"{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)}")
@@ -176,7 +177,7 @@ with tab1:
         else:
              st.info("Lütfen sol taraftan bir çizim görseli yükleyiniz.")
 
-# --- TAB 2: HAZIR PARÇA OLUŞTUR (KOMPAKT TASARIM) ---
+# --- TAB 2: HAZIR PARÇA OLUŞTUR ---
 with tab2:
     c_ayar, c_sonuc = st.columns([1, 2])
     
