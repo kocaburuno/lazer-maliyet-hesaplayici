@@ -12,6 +12,20 @@ except:
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
+# --- CSS İLE STİL AYARLAMALARI (SIDEBAR BOŞLUĞU İÇİN) ---
+st.markdown("""
+    <style>
+        /* Sidebar'ın üst boşluğunu daraltma */
+        [data-testid="stSidebarUserContent"] {
+            padding-top: 1rem;
+        }
+        /* Logoyu biraz daha yukarı çekmek için üst margin ayarı */
+        [data-testid="stSidebarUserContent"] .element-container:first-child {
+            margin-top: -20px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- 2. SAYFA DURUM YÖNETİMİ (SESSION STATE) ---
 if 'sayfa' not in st.session_state:
     st.session_state.sayfa = 'anasayfa'
@@ -51,12 +65,13 @@ with st.sidebar:
     except:
         st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
     
-    # --- YENİ EKLENEN WEB SİTESİ LİNKİ ---
+    # --- WEB SİTESİ LİNKİ (REVİZE EDİLDİ) ---
     st.markdown(
         """
-        <div style='text-align: center; margin-top: -10px; margin-bottom: 10px;'>
-            <a href='https://www.alanlazer.com' target='_blank' style='text-decoration: none; color: #666; font-size: 0.9em;'>
-                www.alanlazer.com
+        <div style='text-align: center; margin-top: -10px; margin-bottom: 20px;'>
+            <a href='https://www.alanlazer.com' target='_blank' 
+               style='text-decoration: none; color: #1C3768; font-size: 1.3em; font-weight: bold; font-family: sans-serif;'>
+                alanlazer.com
             </a>
         </div>
         """, 
@@ -114,8 +129,7 @@ with st.sidebar:
 # --- 5. ANA PANEL İÇERİĞİ ---
 
 st.title("Profesyonel Kesim Analiz Paneli")
-# --- YENİ EKLENEN AI VURGUSU (BAŞLIK ALTI) ---
-st.caption("✨ Yapay Zeka (AI) Destekli Otomatik Maliyetlendirme ve Teklif Sistemi")
+# (Eski AI başlık yazısı kaldırıldı)
 
 # === DURUM A: ANASAYFA (KARŞILAMA EKRANI) ===
 if st.session_state.sayfa == 'anasayfa':
@@ -126,8 +140,8 @@ if st.session_state.sayfa == 'anasayfa':
     
     # --- Sol Sütun: Fotoğraftan Analiz ---
     with col_foto:
-        st.info("📸 **FOTOĞRAFTAN ANALİZ**")
-        # --- AI VURGUSU BURADA DA VAR ---
+        # --- BAŞLIK REVİZE EDİLDİ ---
+        st.info("📸 **FOTOĞRAFTAN ANALİZ (AI DESTEKLİ GÖRÜNTÜ İŞLEME)**")
         st.markdown("""
         Teknik çizim, fotoğraf veya eskiz görsellerini yükleyin. 
         **AI görüntü işleme algoritmamız**, kesim yollarını otomatik tespit eder.
@@ -212,7 +226,6 @@ elif st.session_state.sayfa == 'foto_analiz':
                     cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
                     rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
                     
-                    # --- AI VURGUSU BURADA ---
                     st.image(rgb_img, caption="AI Tarafından Tespit Edilen Kesim Yolları", use_container_width=True)
 
                     if g_max > p_max or g_min > p_min:
