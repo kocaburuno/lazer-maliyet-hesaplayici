@@ -15,7 +15,7 @@ st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_ic
 # 2. SABİT PARAMETRELER
 DK_UCRETI = 25.0       
 PIERCING_SURESI = 2.0  
-FIRE_ORANI = 1.15 # %15 Fire eklendi
+FIRE_ORANI = 1.15 # %15 Fire
 KDV_ORANI = 1.20  # %20 KDV
 
 VERİ = {
@@ -142,7 +142,13 @@ with tab1:
                     display_img = original_img.copy()
                     cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
                     rgb_img = cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB)
-                    st.image(rgb_img, caption="Analiz Edilen Parça", use_container_width=True)
+                    
+                    # --- GÖRSEL BOYUT REVİZESİ ---
+                    # 3 Sütun oluşturup resmi ortadaki sütuna koyarak küçültüyoruz
+                    col_bos1, col_resim, col_bos2 = st.columns([1, 2, 1])
+                    with col_resim:
+                        st.image(rgb_img, caption="Analiz Edilen Parça", use_container_width=True)
+                    # -----------------------------
 
                     piercing_basi = len(valid_contour_list)
                     kesim_yolu_m = (toplam_yol_piksel * oran) / 1000
