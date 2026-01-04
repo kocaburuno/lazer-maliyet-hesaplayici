@@ -1,10 +1,18 @@
 import streamlit as st
+from PIL import Image # Faviconu garantiye almak için eklendi
 import cv2
 import numpy as np
 import math
 
-# 1. SAYFA YAPILANDIRMASI (Favicon: tarayici.png)
-st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon="tarayici.png")
+# --- 1. AYARLAR VE FAVICON YÜKLEME ---
+# Favicon'u PIL ile açıp nesne olarak veriyoruz, bu en sağlam yöntemdir.
+try:
+    fav_icon = Image.open("tarayici.png")
+except:
+    # Dosya yoksa hata vermesin, varsayılan çalışsın
+    fav_icon = None 
+
+st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
 # 2. SABİT PARAMETRELER
 DK_UCRETI = 25.0       
@@ -55,7 +63,7 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # FİYAT GİRİŞİ REVİZESİ: step=10, format="%g" (virgülsüz)
+    # FİYAT GİRİŞİ (10'ar artış, virgülsüz görünüm)
     varsayilan_fiyat = 30.0
     if metal == "Siyah Sac":
         varsayilan_fiyat = 30.0
@@ -68,8 +76,8 @@ with st.sidebar:
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
         value=varsayilan_fiyat, 
-        step=10.0,       # 10'ar artış
-        format="%g",     # Gereksiz sıfırları gizle
+        step=10.0, 
+        format="%g",
         help="Birim kilogram fiyatını buradan güncelleyebilirsiniz."
     )
 
@@ -86,7 +94,7 @@ tab1, tab2 = st.tabs(["📷 FOTOĞRAFTAN ANALİZ", "🛠 HAZIR PARÇA OLUŞTUR"]
 with tab1:
     col_ref, col_hassas = st.columns(2)
     with col_ref:
-        # REFERANS ÖLÇÜ REVİZESİ: step=10, format="%g"
+        # REFERANS ÖLÇÜ (10'ar artış, virgülsüz görünüm)
         referans_olcu = st.number_input(
             "Parçanın En Geniş Uzunluğu (mm)", 
             value=3295.39, 
@@ -165,14 +173,11 @@ with tab2:
     if sekil_tipi == "Kare / Dikdörtgen":
         c1, c2, c3 = st.columns(3)
         with c1:
-            # GENİŞLİK REVİZESİ: step=10, format="%g"
             genislik = st.number_input("Genişlik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
         with c2:
-            # YÜKSEKLİK REVİZESİ: step=10, format="%g"
             yukseklik = st.number_input("Yükseklik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
         with c3:
             delik_sayisi = st.number_input("Delik Sayısı", min_value=0, value=0, step=1)
-            # DELİK ÇAPI REVİZESİ: Delik küçük olduğu için step=1 yaptım, büyük step mantıksız olabilir.
             delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.0, step=1.0, format="%g")
             
         canvas = np.zeros((400, 600, 3), dtype="uint8")
@@ -218,11 +223,9 @@ with tab2:
     elif sekil_tipi == "Daire / Flanş":
         c1, c2 = st.columns(2)
         with c1:
-            # ÇAP REVİZESİ: step=10, format="%g"
             cap = st.number_input("Dış Çap (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
         with c2:
             delik_sayisi = st.number_input("İç Delik Sayısı", min_value=0, value=1, step=1)
-            # DELİK ÇAPI: step=1
             delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=50.0, step=1.0, format="%g")
             
         canvas = np.zeros((400, 400, 3), dtype="uint8")
