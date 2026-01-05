@@ -1,53 +1,23 @@
 import streamlit as st
-import sys
-import subprocess
-import importlib.util
-
-# --- 0. OTOMATİK KÜTÜPHANE YÜKLEYİCİ (Terminal Açmadan Çözüm) ---
-def kutuphane_kontrol_ve_yukle():
-    gerekli_paketler = ['ezdxf', 'matplotlib']
-    yuklenen_var = False
-    
-    for paket in gerekli_paketler:
-        spec = importlib.util.find_spec(paket)
-        if spec is None:
-            placeholder = st.empty()
-            placeholder.warning(f"⚠️ '{paket}' kütüphanesi eksik. Arka planda otomatik yükleniyor... Lütfen bekleyin.")
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", paket])
-                placeholder.success(f"✅ '{paket}' başarıyla yüklendi!")
-                yuklenen_var = True
-            except Exception as e:
-                st.error(f"Otomatik yükleme başarısız oldu: {e}")
-    
-    if yuklenen_var:
-        st.success("Tüm gereksinimler sağlandı. Uygulama yeniden başlatılıyor...")
-        st.rerun()
-
-# Sayfa ayarlarından önce kontrolü çalıştır
-st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide")
-kutuphane_kontrol_ve_yukle()
-
-# --- STANDART IMPORTLAR ---
 from PIL import Image
 import cv2
 import numpy as np
 import math
 import tempfile
 import os
+import io
 
-# --- KÜTÜPHANE IMPORTLARI (Artık Yüklü Olduğundan Eminiz) ---
+# --- KÜTÜPHANE KONTROLÜ (Hata Yönetimi) ---
 try:
     import ezdxf
     from ezdxf import bbox
     import matplotlib
-    matplotlib.use('Agg') # GUI olmadan çalışması için
+    matplotlib.use('Agg') # GUI olmadan çalışması için backend
     import matplotlib.pyplot as plt
     from ezdxf.addons.drawing import RenderContext, Frontend
     from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
     dxf_active = True
 except ImportError:
-    # Otomatik yükleyici çalışmazsa burası son güvenlik ağıdır
     dxf_active = False
 
 # --- 1. AYARLAR VE FAVICON ---
@@ -56,7 +26,7 @@ try:
 except:
     fav_icon = None 
 
-# st.set_page_config yukarıda çağrıldı, burayı geçiyoruz.
+st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
 # --- 2. CSS STİL AYARLAMALARI ---
 st.markdown("""
@@ -332,7 +302,7 @@ elif st.session_state.sayfa == 'foto_analiz':
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
 
-# === DURUM C: TEKNİK ÇİZİM ANALİZ (YENİLENMİŞ DXF GÖRSELLEŞTİRME) ===
+# === DURUM C: TEKNİK ÇİZİM ANALİZ (DXF GÖRSELLEŞTİRME - MATPLOTLIB BACKEND) ===
 elif st.session_state.sayfa == 'dxf_analiz':
     if st.button("⬅️ Ana Menüye Dön"):
         sayfa_degistir('anasayfa')
@@ -344,8 +314,10 @@ elif st.session_state.sayfa == 'dxf_analiz':
     with c_dxf_ayar:
         st.subheader("Teknik Çizim Yükle")
         if not dxf_active:
-            st.error("⚠️ Kütüphaneler hala yüklenemedi. Lütfen internet bağlantısını kontrol edip uygulamayı yeniden başlatın.")
+            st.error("⚠️ 'ezdxf' veya 'matplotlib' kütüphanesi eksik!")
+            st.info("Lütfen proje klasörünüze 'requirements.txt' dosyasını ekleyin.")
         
+        # Hassasiyet ayarı
         hassasiyet_dxf = st.slider("Hassasiyet (Kontur Yakalama)", 50, 255, 100, step=1)
         uploaded_dxf = st.file_uploader("Dosya Seç (Sadece DXF)", type=['dxf'])
 
@@ -361,45 +333,43 @@ elif st.session_state.sayfa == 'dxf_analiz':
                 msp = doc.modelspace()
                 os.remove(tmp_path)
 
-                # 2. REVİZE EDİLEN KISIM: MATPLOTLIB İLE GÖRSELLEŞTİRME
-                # Arkaplan: Koyu (#111827), Çizgiler: Beyaz (#FFFFFF)
-                
-                # Gerçek Boyutları Hesapla (Bounding Box)
-                bbox_cache = bbox.extents(msp)
-                w_real = bbox_cache.extmax.x - bbox_cache.extmin.x
-                h_real = bbox_cache.extmax.y - bbox_cache.extmin.y
+                # 2. GÖRSELLEŞTİRME (Koyu Mod + Tam Geometri)
+                # Bounding Box Hesapla
+                try:
+                    bbox_cache = bbox.extents(msp)
+                    w_real = bbox_cache.extmax.x - bbox_cache.extmin.x
+                    h_real = bbox_cache.extmax.y - bbox_cache.extmin.y
+                except:
+                    w_real, h_real = 0, 0
                 
                 if w_real > 0 and h_real > 0:
-                    # Matplotlib Figürü Oluştur (Koyu Arkaplan)
+                    # Matplotlib Figürü (Koyu Arkaplan)
                     fig = plt.figure(figsize=(10, 10), facecolor='#111827')
                     ax = fig.add_axes([0, 0, 1, 1])
                     ax.set_facecolor('#111827')
                     
-                    # Çizim Context Oluştur ve Renkleri Beyaza Zorla
+                    # Çizim Context (Beyaz Çizgiler)
                     ctx = RenderContext(doc)
                     for layer in ctx.layers.values():
-                        layer.color = '#FFFFFF' # Tüm katmanlar BEYAZ
+                        layer.color = '#FFFFFF' 
                     
-                    # Çizimi Yap (ARC ve POLYLINE otomatik çizilir)
+                    # Çizimi Yap
                     out = MatplotlibBackend(ax)
                     Frontend(ctx, out).draw_layout(msp, finalize=True)
                     
                     ax.set_aspect('equal', 'datalim')
                     ax.axis('off')
                     
-                    # Figürü Resme Çevir (OpenCV ile işlenebilecek hale getir)
+                    # Figürü Bellekte Resme Çevir
                     fig.canvas.draw()
-                    
-                    # Buffer'dan numpy array'e dönüştür
                     img_data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
                     img_data = img_data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                    plt.close(fig)
                     
-                    plt.close(fig) # Bellek temizliği
-                    
-                    # OpenCV Formatına Dönüştür (RGB -> BGR)
+                    # OpenCV Formatına (RGB -> BGR)
                     dxf_img_bgr = cv2.cvtColor(img_data, cv2.COLOR_RGB2BGR)
                     
-                    # 3. Kontur Analizi ve Hesaplama (Görüntü İşleme)
+                    # 3. Kontur Analizi
                     gray = cv2.cvtColor(dxf_img_bgr, cv2.COLOR_BGR2GRAY)
                     _, binary = cv2.threshold(gray, hassasiyet_dxf, 255, cv2.THRESH_BINARY)
                     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
@@ -410,17 +380,14 @@ elif st.session_state.sayfa == 'dxf_analiz':
                             if cv2.contourArea(cnt) < 5: continue 
                             valid_cnts.append(cnt)
                     
-                    # Sonuç Gösterimi (Yeşil Kontur Çizgisi Eklenmiş Halde)
+                    # Sonuç Gösterimi
                     result_img = dxf_img_bgr.copy()
                     cv2.drawContours(result_img, valid_cnts, -1, (0, 255, 0), 2)
                     st.image(result_img, caption=f"DXF Görselleştirme: {uploaded_dxf.name}", use_container_width=True)
                     
                     # 4. Hesaplamalar
-                    h_px_img, w_px_img = dxf_img_bgr.shape[:2]
-                    
-                    all_pts = np.concatenate(valid_cnts) if valid_cnts else None
-                    
-                    if all_pts is not None:
+                    if valid_cnts:
+                        all_pts = np.concatenate(valid_cnts)
                         x_p, y_p, w_p, h_p = cv2.boundingRect(all_pts)
                         scale_ratio = w_real / w_p # mm / pixel
                         
@@ -448,9 +415,9 @@ elif st.session_state.sayfa == 'dxf_analiz':
                             st.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
                             st.success(f"KDV DAHİL: {round(kdvli_fiyat, 2)} TL")
                     else:
-                        st.warning("Görsel üzerinde kontur algılanamadı.")
+                        st.warning("Görsel üzerinde kesim yolu algılanamadı.")
                 else:
-                    st.warning("DXF dosyasında çizim verisi (Line, Arc, Circle vb.) bulunamadı.")
+                    st.warning("DXF dosyasında geçerli çizim verisi bulunamadı.")
 
             except Exception as e:
                 st.error(f"Hata: {e}")
