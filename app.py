@@ -155,7 +155,8 @@ with st.sidebar:
         # Paslanmaz ve Alüminyum
         plaka_secenekleri = {
             "100x200cm": (1000, 2000), 
-            "150x300cm": (1500, 3000)
+            "150x300cm": (1500, 3000),
+            "150x600cm": (1500, 6000)
         }
 
     # Filtrelenmiş Plaka Listesini Göster
@@ -207,8 +208,7 @@ if st.session_state.sayfa == 'anasayfa':
         Fotoğraf veya eskiz görsellerini yükleyin. **AI görüntü işleme algoritmamız** işini yapsın.
         
         **Özellikler:**
-        * JPG, PNG formatı
-        * Otomatik Kenar Tespiti
+        * **JPG, PNG formatı**
         * Referans Ölçü ile Ölçekleme
         """)
         if st.button("FOTOĞRAF YÜKLE", use_container_width=True, type="primary"):
@@ -221,8 +221,7 @@ if st.session_state.sayfa == 'anasayfa':
         Vektörel çizim dosyalarınızı (DXF) doğrudan yükleyerek %100 hassas sonuç alın.
         
         **Özellikler:**
-        * Yalnızca DXF Desteği
-        * Yaylar (ARC) ve Birleşik Çizgiler
+        * **Yalnızca DXF Desteği**
         * Otomatik Yerleşim (Nesting)
         """)
         if st.button("ÇİZİM DOSYASI YÜKLE", use_container_width=True, type="primary"):
@@ -235,9 +234,8 @@ if st.session_state.sayfa == 'anasayfa':
         Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) manuel oluşturun.
         
         **Özellikler:**
-        * Kare, Dikdörtgen, Daire
+        * **Kare, Dikdörtgen, Daire**
         * Delik Tanımlama
-        * Hızlı Şablon Oluşturma
         """)
         if st.button("MANUEL PARÇA OLUŞTUR", use_container_width=True, type="primary"):
             sayfa_degistir('hazir_parca')
