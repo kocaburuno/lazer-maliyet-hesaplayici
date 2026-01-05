@@ -149,16 +149,16 @@ with st.sidebar:
         if 0.8 <= kalinlik <= 1.5:
             # İnce Saclar
             plaka_secenekleri = {
-                "1000x2000": (1000, 2000), 
-                "1250x2500": (1250, 2500), 
-                "1500x3000": (1500, 3000)
+                "100x200cm": (1000, 2000), 
+                "125x250cm": (1250, 2500), 
+                "150x300cm": (1500, 3000)
             }
         elif kalinlik >= 2.0:
             # Kalın Saclar
             plaka_secenekleri = {
-                "1000x2000": (1000, 2000), 
-                "1500x3000": (1500, 3000), 
-                "1500x6000": (1500, 6000)
+                "100x200cm": (1000, 2000), 
+                "150x300cm": (1500, 3000), 
+                "150x600cm": (1500, 6000)
             }
         else:
             # Varsayılan (Beklenmeyen durumlar için)
@@ -167,8 +167,8 @@ with st.sidebar:
     else:
         # Paslanmaz ve Alüminyum (Tüm kalınlıklar standart)
         plaka_secenekleri = {
-            "1000x2000": (1000, 2000), 
-            "1500x3000": (1500, 3000)
+            "100x200cm": (1000, 2000), 
+            "150x300cm": (1500, 3000)
         }
 
     # 4. Filtrelenmiş Plaka Listesini Göster
@@ -183,8 +183,8 @@ with st.sidebar:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
-    varsayilan_fiyat = 30.0
-    if metal == "Siyah Sac": varsayilan_fiyat = 30.0
+    varsayilan_fiyat = 33.0
+    if metal == "Siyah Sac": varsayilan_fiyat = 33.0
     elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
     elif metal == "Alüminyum": varsayilan_fiyat = 220.0
     
