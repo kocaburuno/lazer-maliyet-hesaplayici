@@ -98,7 +98,7 @@ PIERCING_SURESI = materials.PIERCING_SURESI
 FIRE_ORANI = materials.FIRE_ORANI
 KDV_ORANI = materials.KDV_ORANI
 
-# --- 5. SIDEBAR (GÜNCELLENMİŞ) ---
+# --- 5. SIDEBAR ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -119,66 +119,66 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # 1. Önce Metal Türünü Seç
-    metal = st.selectbox("Metal Türü", list(VERİ.keys()))
+    # Metal Türü Seçimi (Artık yeni isimle gelecek)
+    metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
     
-    # 2. Sonra Kalınlık ve Adet Seç (Çünkü Plaka boyutu kalınlığa bağlı değişecek)
+    # Kalınlık ve Adet Seçimi
     col_s1, col_s2 = st.columns(2)
     with col_s1:
-        kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
+        kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
 
-    # 3. Plaka Seçeneklerini Belirle (YENİ MANTIK)
-    if metal == "Siyah Sac":
+    # --- KRİTİK DEĞİŞİKLİK BURADA YAPILDI ---
+    # Eski: if metal == "Siyah Sac":
+    # Yeni: if metal == "DKP / HRP(Siyah Sac)":
+    
+    if metal == "DKP / HRP(Siyah Sac)":
         if 0.8 <= kalinlik <= 1.5:
-            # İnce Saclar
+            # İnce Saclar (DKP Genellikle)
             plaka_secenekleri = {
                 "100x200cm": (1000, 2000), 
                 "125x250cm": (1250, 2500), 
                 "150x300cm": (1500, 3000)
             }
         elif kalinlik >= 2.0:
-            # Kalın Saclar
+            # Kalın Saclar (HRP Genellikle)
             plaka_secenekleri = {
                 "100x200cm": (1000, 2000), 
                 "150x300cm": (1500, 3000), 
                 "150x600cm": (1500, 6000)
             }
         else:
-            # Varsayılan (Beklenmeyen durumlar için)
             plaka_secenekleri = {"150x300cm": (1500, 3000)}
             
     else:
-        # Paslanmaz ve Alüminyum (Tüm kalınlıklar standart)
+        # Paslanmaz ve Alüminyum
         plaka_secenekleri = {
             "100x200cm": (1000, 2000), 
             "150x300cm": (1500, 3000)
         }
 
-    # 4. Filtrelenmiş Plaka Listesini Göster
+    # Filtrelenmiş Plaka Listesini Göster
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
 
     # --- Hız ve Fiyat Hesaplamaları ---
-    hiz_tablosu = VERİ[metal]["hizlar"]
+    hiz_tablosu = materials.VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
     for k in tanimli_k:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
-    varsayilan_fiyat = 33.0
-    if metal == "Siyah Sac": varsayilan_fiyat = 33.0
-    elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
-    elif metal == "Alüminyum": varsayilan_fiyat = 220.0
+    # Varsayılan fiyatı yeni anahtarla çekecek
+    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 33.0)
     
     st.markdown("---")
     
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
-        value=varsayilan_fiyat, 
+        value=float(varsayilan_fiyat), 
         step=1.0, 
         format="%g"
     )
