@@ -113,7 +113,7 @@ VERİ = {
     }
 }
 
-# --- 5. SIDEBAR ---
+# --- 5. SIDEBAR (GÜNCELLENMİŞ) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -134,17 +134,48 @@ with st.sidebar:
         
     st.markdown("---")
     
+    # 1. Önce Metal Türünü Seç
     metal = st.selectbox("Metal Türü", list(VERİ.keys()))
-    plaka_secenekleri = {"1500x6000": (1500, 6000), "1500x3000": (1500, 3000), "2500x1250": (2500, 1250)}
-    secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
-    secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
-
+    
+    # 2. Sonra Kalınlık ve Adet Seç (Çünkü Plaka boyutu kalınlığa bağlı değişecek)
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
-    
+
+    # 3. Plaka Seçeneklerini Belirle (YENİ MANTIK)
+    if metal == "Siyah Sac":
+        if 0.8 <= kalinlik <= 1.5:
+            # İnce Saclar
+            plaka_secenekleri = {
+                "1000x2000": (1000, 2000), 
+                "1250x2500": (1250, 2500), 
+                "1500x3000": (1500, 3000)
+            }
+        elif kalinlik >= 2.0:
+            # Kalın Saclar
+            plaka_secenekleri = {
+                "1000x2000": (1000, 2000), 
+                "1500x3000": (1500, 3000), 
+                "1500x6000": (1500, 6000)
+            }
+        else:
+            # Varsayılan (Beklenmeyen durumlar için)
+            plaka_secenekleri = {"1500x3000": (1500, 3000)}
+            
+    else:
+        # Paslanmaz ve Alüminyum (Tüm kalınlıklar standart)
+        plaka_secenekleri = {
+            "1000x2000": (1000, 2000), 
+            "1500x3000": (1500, 3000)
+        }
+
+    # 4. Filtrelenmiş Plaka Listesini Göster
+    secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
+    secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
+
+    # --- Hız ve Fiyat Hesaplamaları ---
     hiz_tablosu = VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
