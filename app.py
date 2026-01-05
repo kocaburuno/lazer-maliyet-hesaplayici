@@ -7,6 +7,9 @@ import tempfile
 import os
 import io
 
+# --- HARİCİ VERİ DOSYASINDAN OKUMA ---
+import materials  # materials.py dosyasını dahil ediyoruz
+
 # --- KÜTÜPHANE KONTROLÜ (Hata Yönetimi) ---
 try:
     import ezdxf
@@ -89,31 +92,13 @@ if 'sayfa' not in st.session_state:
 def sayfa_degistir(sayfa_adi):
     st.session_state.sayfa = sayfa_adi
 
-# --- 4. SABİT PARAMETRELER ---
-DK_UCRETI = 25.0        
-PIERCING_SURESI = 2.0   
-FIRE_ORANI = 1.15 
-KDV_ORANI = 1.20   
+# --- 4. SABİT PARAMETRELER (Artık materials.py'den geliyor) ---
+DK_UCRETI = materials.DK_UCRETI
+PIERCING_SURESI = materials.PIERCING_SURESI
+FIRE_ORANI = materials.FIRE_ORANI
+KDV_ORANI = materials.KDV_ORANI
 
-VERİ = {
-    "Siyah Sac": {
-        "ozkutle": 7.85, 
-        "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20], 
-        "hizlar": {0.8: 6000, 3: 2800, 10: 800}
-    },
-    "Paslanmaz": {
-        "ozkutle": 8.0, 
-        "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 15], 
-        "hizlar": {0.8: 7000, 2: 4500, 10: 500}
-    },
-    "Alüminyum": {
-        "ozkutle": 2.7, 
-        "kalinliklar": [0.8, 1, 1.2, 1.5, 2, 3, 4, 5, 6, 8], 
-        "hizlar": {0.8: 8000, 2: 5000, 8: 600}
-    }
-}
-
-# --- 5. SIDEBAR (GÜNCELLENMİŞ) ---
+# --- 5. SIDEBAR ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -134,66 +119,62 @@ with st.sidebar:
         
     st.markdown("---")
     
-    # 1. Önce Metal Türünü Seç
-    metal = st.selectbox("Metal Türü", list(VERİ.keys()))
+    # Metal Türü Seçimi (materials.py dosyasındaki VERİ'den)
+    metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
     
-    # 2. Sonra Kalınlık ve Adet Seç (Çünkü Plaka boyutu kalınlığa bağlı değişecek)
+    # Kalınlık ve Adet Seçimi
     col_s1, col_s2 = st.columns(2)
     with col_s1:
-        kalinlik = st.selectbox("Kalınlık (mm)", VERİ[metal]["kalinliklar"])
+        kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
 
-    # 3. Plaka Seçeneklerini Belirle (YENİ MANTIK)
+    # Plaka Seçeneklerini Belirle (Logic burada kalmalı, data materials.py'de)
     if metal == "Siyah Sac":
         if 0.8 <= kalinlik <= 1.5:
             # İnce Saclar
             plaka_secenekleri = {
-                "100x200cm": (1000, 2000), 
-                "125x250cm": (1250, 2500), 
-                "150x300cm": (1500, 3000)
+                "1000x2000": (1000, 2000), 
+                "1250x2500": (1250, 2500), 
+                "1500x3000": (1500, 3000)
             }
         elif kalinlik >= 2.0:
             # Kalın Saclar
             plaka_secenekleri = {
-                "100x200cm": (1000, 2000), 
-                "150x300cm": (1500, 3000), 
-                "150x600cm": (1500, 6000)
+                "1000x2000": (1000, 2000), 
+                "1500x3000": (1500, 3000), 
+                "1500x6000": (1500, 6000)
             }
         else:
-            # Varsayılan (Beklenmeyen durumlar için)
             plaka_secenekleri = {"1500x3000": (1500, 3000)}
             
     else:
-        # Paslanmaz ve Alüminyum (Tüm kalınlıklar standart)
+        # Paslanmaz ve Alüminyum
         plaka_secenekleri = {
-            "100x200cm": (1000, 2000), 
-            "150x300cm": (1500, 3000)
+            "1000x2000": (1000, 2000), 
+            "1500x3000": (1500, 3000)
         }
 
-    # 4. Filtrelenmiş Plaka Listesini Göster
+    # Filtrelenmiş Plaka Listesini Göster
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
     secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
 
-    # --- Hız ve Fiyat Hesaplamaları ---
-    hiz_tablosu = VERİ[metal]["hizlar"]
+    # --- Hız ve Fiyat Hesaplamaları (Veriler materials.py'den) ---
+    hiz_tablosu = materials.VERİ[metal]["hizlar"]
     tanimli_k = sorted(hiz_tablosu.keys())
     uygun_k = tanimli_k[0]
     for k in tanimli_k:
         if kalinlik >= k: uygun_k = k
     guncel_hiz = hiz_tablosu[uygun_k]
 
-    varsayilan_fiyat = 33.0
-    if metal == "Siyah Sac": varsayilan_fiyat = 33.0
-    elif metal == "Paslanmaz": varsayilan_fiyat = 150.0
-    elif metal == "Alüminyum": varsayilan_fiyat = 220.0
+    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 30.0)
     
     st.markdown("---")
     
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
-        value=varsayilan_fiyat, 
+        value=float(varsayilan_fiyat), 
         step=1.0, 
         format="%g"
     )
@@ -222,7 +203,8 @@ if st.session_state.sayfa == 'anasayfa':
         Fotoğraf veya eskiz görsellerini yükleyin. **AI görüntü işleme algoritmamız** işini yapsın.
         
         **Özellikler:**
-        * **JPG, PNG formatı**
+        * JPG, PNG formatı
+        * Otomatik Kenar Tespiti
         * Referans Ölçü ile Ölçekleme
         """)
         if st.button("FOTOĞRAF YÜKLE", use_container_width=True, type="primary"):
@@ -235,7 +217,8 @@ if st.session_state.sayfa == 'anasayfa':
         Vektörel çizim dosyalarınızı (DXF) doğrudan yükleyerek %100 hassas sonuç alın.
         
         **Özellikler:**
-        * **Yalnızca DXF Desteği**
+        * Yalnızca DXF Desteği
+        * Yaylar (ARC) ve Birleşik Çizgiler
         * Otomatik Yerleşim (Nesting)
         """)
         if st.button("ÇİZİM DOSYASI YÜKLE", use_container_width=True, type="primary"):
@@ -248,8 +231,9 @@ if st.session_state.sayfa == 'anasayfa':
         Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) manuel oluşturun.
         
         **Özellikler:**
-        * **Kare, Dikdörtgen, Daire**
+        * Kare, Dikdörtgen, Daire
         * Delik Tanımlama
+        * Hızlı Şablon Oluşturma
         """)
         if st.button("MANUEL PARÇA OLUŞTUR", use_container_width=True, type="primary"):
             sayfa_degistir('hazir_parca')
@@ -312,7 +296,7 @@ elif st.session_state.sayfa == 'foto_analiz':
                     kesim_m = (sum([cv2.arcLength(c, True) for c in valid_contour_list]) * oran) / 1000
                     kontur_ad = len(valid_contour_list)
                     sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * PIERCING_SURESI / 60)
-                    agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
+                    agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
                     fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
                     kdvli_fiyat = fiyat * KDV_ORANI
 
@@ -388,13 +372,10 @@ elif st.session_state.sayfa == 'dxf_analiz':
                     ax.set_aspect('equal', 'datalim')
                     ax.axis('off')
                     
-                    # DÜZELTME: Matplotlib Yeni Sürüm Uyumluluğu
+                    # Matplotlib Yeni Sürüm Uyumluluğu
                     fig.canvas.draw()
-                    
-                    # buffer_rgba() kullanarak görüntüyü alıyoruz (tostring_rgb yerine)
                     width, height = fig.canvas.get_width_height()
                     img_data = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).reshape(height, width, 4)
-                    
                     plt.close(fig)
                     
                     # OpenCV Formatına (RGBA -> BGR) Dönüştür
@@ -427,7 +408,7 @@ elif st.session_state.sayfa == 'dxf_analiz':
                         piercing_basi = len(valid_cnts)
                         
                         sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
-                        agirlik = (w_real * h_real * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
+                        agirlik = (w_real * h_real * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
                         
                         toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
                         kdvli_fiyat = toplam_fiyat * KDV_ORANI
@@ -477,23 +458,17 @@ elif st.session_state.sayfa == 'hazir_parca':
             delik_sayisi = st.number_input("Delik Sayısı", min_value=0, value=0, step=1)
             delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.0, step=1.0, format="%g")
             
-            # Canvas Hazırlığı
             canvas = np.zeros((400, 600, 3), dtype="uint8") + 255 # Beyaz zemin
             max_dim = max(genislik, yukseklik)
-            scale = 300 / max_dim # Biraz boşluk bırak
+            scale = 300 / max_dim 
             w_px, h_px = int(genislik * scale), int(yukseklik * scale)
             start_x, start_y = (600 - w_px) // 2, (400 - h_px) // 2
             
-            # Ana Dikdörtgeni Çiz (Siyah Çizgi)
             cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0, 0, 0), 2)
             
-            # --- GÖRSELLEŞTİRME MANTIĞI (REVİZE EDİLDİ) ---
             if delik_sayisi > 0 and delik_capi > 0:
                 d_px_r = int((delik_capi * scale) / 2)
                 padding = d_px_r + 15
-                
-                # Koordinat Havuzu (Köşeler + Merkez)
-                # 1. Sol-Üst, 2. Sağ-Üst, 3. Sağ-Alt, 4. Sol-Alt, 5. Orta
                 coords = [
                     (start_x + padding, start_y + padding), 
                     (start_x + w_px - padding, start_y + padding),
@@ -502,23 +477,17 @@ elif st.session_state.sayfa == 'hazir_parca':
                     (start_x + w_px // 2, start_y + h_px // 2)
                 ]
 
-                # KURAL: 5 ve altıysa hepsini çiz, 5'ten fazlaysa tek çiz + yazı yaz
                 if delik_sayisi <= 5:
                     count_to_draw = min(delik_sayisi, 5)
-                    # Eğer delik sayısı 1 ise sadece ortaya çizsin, değilse sırayla köşelere
                     if delik_sayisi == 1:
-                         cv2.circle(canvas, coords[4], d_px_r, (0, 0, 255), 2) # Kırmızı Delik
+                         cv2.circle(canvas, coords[4], d_px_r, (0, 0, 255), 2)
                     else:
                         for i in range(count_to_draw):
-                            # Eğer 5. delik varsa onu ortaya (coords[4]) al, diğerleri sırayla
                             pos = coords[i]
                             cv2.circle(canvas, pos, d_px_r, (0, 0, 255), 2)
                 else:
-                    # 5'ten fazla durumunda: Tek delik + Yazı
                     center_pos = coords[4]
                     cv2.circle(canvas, center_pos, d_px_r, (0, 0, 255), 2)
-                    
-                    # Yazı Ayarları
                     text = f"{delik_sayisi} adet"
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     font_scale = 0.7
@@ -526,17 +495,12 @@ elif st.session_state.sayfa == 'hazir_parca':
                     text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
                     text_x = center_pos[0] + d_px_r + 10
                     text_y = center_pos[1] + 5
-                    
-                    # Yazıyı Çiz
                     cv2.putText(canvas, text, (text_x, text_y), font, font_scale, (0, 0, 0), thickness)
 
-            # Hesaplamalar (Değişmedi)
             toplam_kesim_mm = 2 * (genislik + yukseklik) + delik_sayisi * (math.pi * delik_capi)
             net_alan_mm2 = (genislik * yukseklik) - delik_sayisi * (math.pi * (delik_capi/2)**2)
             piercing_sayisi = 1 + delik_sayisi
             
-            # Ekranda göstermek için BGR -> RGB dönüşümü (Matplotlib backend düzeltmesi sonrası renkler karışmasın)
-            # OpenCV BGR çalışır, Streamlit RGB ister.
             canvas_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
 
         # --- DAİRE / FLANŞ MANTIĞI ---
@@ -549,41 +513,32 @@ elif st.session_state.sayfa == 'hazir_parca':
             r_px = 140
             center = (200, 200)
             
-            # Ana Daireyi Çiz
             cv2.circle(canvas, center, r_px, (0, 0, 0), 2)
             
-            # --- GÖRSELLEŞTİRME MANTIĞI (REVİZE EDİLDİ) ---
             if delik_sayisi > 0 and delik_capi > 0:
                 d_px_r = int(((delik_capi / cap) * r_px)) 
                 
-                # KURAL: 5 ve altıysa dairesel dağıt, 5'ten fazlaysa tek çiz + yazı
                 if delik_sayisi <= 5:
                     if delik_sayisi == 1:
-                        # Tekse tam ortaya
                         cv2.circle(canvas, center, d_px_r, (0, 0, 255), 2)
                     else:
-                        # Çokluysa etrafa dağıt (Flanş mantığı)
-                        orbit_radius = r_px * 0.6 # Deliklerin dizileceği çember yarıçapı
+                        orbit_radius = r_px * 0.6 
                         for i in range(delik_sayisi):
                             angle = (2 * math.pi / delik_sayisi) * i
                             dx = int(center[0] + orbit_radius * math.cos(angle))
                             dy = int(center[1] + orbit_radius * math.sin(angle))
                             cv2.circle(canvas, (dx, dy), d_px_r, (0, 0, 255), 2)
                 else:
-                    # 5'ten fazla durumu: Tek merkez delik + Yazı
                     cv2.circle(canvas, center, d_px_r, (0, 0, 255), 2)
-                    
                     text = f"{delik_sayisi} adet"
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     font_scale = 0.7
                     thickness = 2
                     text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
                     text_x = center[0] - (text_size[0] // 2)
-                    text_y = center[1] + d_px_r + 30 # Deliğin altına yaz
-                    
+                    text_y = center[1] + d_px_r + 30
                     cv2.putText(canvas, text, (text_x, text_y), font, font_scale, (0, 0, 0), thickness)
 
-            # Hesaplamalar
             toplam_kesim_mm = math.pi * cap + delik_sayisi * (math.pi * delik_capi)
             net_alan_mm2 = math.pi * (cap/2)**2 - delik_sayisi * (math.pi * (delik_capi/2)**2)
             piercing_sayisi = 1 + delik_sayisi
@@ -592,13 +547,11 @@ elif st.session_state.sayfa == 'hazir_parca':
             canvas_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
 
     with c_sonuc:
-        # Görseli Göster
         st.image(canvas_rgb, caption=f"Önizleme: {genislik}x{yukseklik}mm", use_container_width=True)
         
-        # Maliyet Hesapları
         kesim_m = toplam_kesim_mm / 1000
         sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * PIERCING_SURESI / 60)
-        agirlik = (net_alan_mm2 * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
+        agirlik = (net_alan_mm2 * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
         toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
         kdvli_fiyat = toplam_fiyat * KDV_ORANI
         
