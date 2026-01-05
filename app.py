@@ -194,7 +194,7 @@ with st.sidebar:
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
         value=varsayilan_fiyat, 
-        step=10.0, 
+        step=1.0, 
         format="%g"
     )
 
