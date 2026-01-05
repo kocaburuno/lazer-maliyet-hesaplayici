@@ -72,7 +72,7 @@ st.markdown("""
             min-width: 150px !important;
         }
         [data-testid="stMetricValue"] {
-            font-size: 22px !important;
+            font-size: 30px !important;
             font-weight: bold !important;
             color: #1C3768 !important;
         }
