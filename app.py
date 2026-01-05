@@ -442,51 +442,132 @@ elif st.session_state.sayfa == 'hazir_parca':
         sekil_tipi = st.radio("Parça Tipi", ["Kare / Dikdörtgen", "Daire / Flanş"])
         st.divider()
         
+        # --- KARE / DİKDÖRTGEN MANTIĞI ---
         if sekil_tipi == "Kare / Dikdörtgen":
             genislik = st.number_input("Genişlik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
             yukseklik = st.number_input("Yükseklik (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
             delik_sayisi = st.number_input("Delik Sayısı", min_value=0, value=0, step=1)
             delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=10.0, step=1.0, format="%g")
             
-            canvas = np.zeros((300, 600, 3), dtype="uint8")
+            # Canvas Hazırlığı
+            canvas = np.zeros((400, 600, 3), dtype="uint8") + 255 # Beyaz zemin
             max_dim = max(genislik, yukseklik)
-            scale = 250 / max_dim
+            scale = 300 / max_dim # Biraz boşluk bırak
             w_px, h_px = int(genislik * scale), int(yukseklik * scale)
-            start_x, start_y = (600 - w_px) // 2, (300 - h_px) // 2
-            cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0, 255, 0), 2)
+            start_x, start_y = (600 - w_px) // 2, (400 - h_px) // 2
             
+            # Ana Dikdörtgeni Çiz (Siyah Çizgi)
+            cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0, 0, 0), 2)
+            
+            # --- GÖRSELLEŞTİRME MANTIĞI (REVİZE EDİLDİ) ---
             if delik_sayisi > 0 and delik_capi > 0:
                 d_px_r = int((delik_capi * scale) / 2)
-                padding = d_px_r + 10 
-                if delik_sayisi == 1: cv2.circle(canvas, (300, 150), d_px_r, (0, 255, 0), 2)
-                else:
-                    coords = [(start_x + padding, start_y + padding), (start_x + w_px - padding, start_y + padding),
-                              (start_x + w_px - padding, start_y + h_px - padding), (start_x + padding, start_y + h_px - padding)]
-                    for i in range(min(delik_sayisi, 4)): cv2.circle(canvas, coords[i], d_px_r, (0, 255, 0), 2)
+                padding = d_px_r + 15
+                
+                # Koordinat Havuzu (Köşeler + Merkez)
+                # 1. Sol-Üst, 2. Sağ-Üst, 3. Sağ-Alt, 4. Sol-Alt, 5. Orta
+                coords = [
+                    (start_x + padding, start_y + padding), 
+                    (start_x + w_px - padding, start_y + padding),
+                    (start_x + w_px - padding, start_y + h_px - padding),
+                    (start_x + padding, start_y + h_px - padding),
+                    (start_x + w_px // 2, start_y + h_px // 2)
+                ]
 
+                # KURAL: 5 ve altıysa hepsini çiz, 5'ten fazlaysa tek çiz + yazı yaz
+                if delik_sayisi <= 5:
+                    count_to_draw = min(delik_sayisi, 5)
+                    # Eğer delik sayısı 1 ise sadece ortaya çizsin, değilse sırayla köşelere
+                    if delik_sayisi == 1:
+                         cv2.circle(canvas, coords[4], d_px_r, (0, 0, 255), 2) # Kırmızı Delik
+                    else:
+                        for i in range(count_to_draw):
+                            # Eğer 5. delik varsa onu ortaya (coords[4]) al, diğerleri sırayla
+                            pos = coords[i]
+                            cv2.circle(canvas, pos, d_px_r, (0, 0, 255), 2)
+                else:
+                    # 5'ten fazla durumunda: Tek delik + Yazı
+                    center_pos = coords[4]
+                    cv2.circle(canvas, center_pos, d_px_r, (0, 0, 255), 2)
+                    
+                    # Yazı Ayarları
+                    text = f"{delik_sayisi} adet"
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    font_scale = 0.7
+                    thickness = 2
+                    text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+                    text_x = center_pos[0] + d_px_r + 10
+                    text_y = center_pos[1] + 5
+                    
+                    # Yazıyı Çiz
+                    cv2.putText(canvas, text, (text_x, text_y), font, font_scale, (0, 0, 0), thickness)
+
+            # Hesaplamalar (Değişmedi)
             toplam_kesim_mm = 2 * (genislik + yukseklik) + delik_sayisi * (math.pi * delik_capi)
             net_alan_mm2 = (genislik * yukseklik) - delik_sayisi * (math.pi * (delik_capi/2)**2)
             piercing_sayisi = 1 + delik_sayisi
+            
+            # Ekranda göstermek için BGR -> RGB dönüşümü (Matplotlib backend düzeltmesi sonrası renkler karışmasın)
+            # OpenCV BGR çalışır, Streamlit RGB ister.
+            canvas_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
 
+        # --- DAİRE / FLANŞ MANTIĞI ---
         elif sekil_tipi == "Daire / Flanş":
             cap = st.number_input("Dış Çap (mm)", min_value=1.0, value=100.0, step=10.0, format="%g")
             delik_sayisi = st.number_input("İç Delik Sayısı", min_value=0, value=1, step=1)
             delik_capi = st.number_input("Delik Çapı (mm)", min_value=0.0, value=50.0, step=1.0, format="%g")
             
-            canvas = np.zeros((300, 400, 3), dtype="uint8")
-            r_px, center = 120, (200, 150)
-            cv2.circle(canvas, center, r_px, (0, 255, 0), 2)
-            if delik_sayisi > 0 and delik_capi > 0:
-                d_px_r = int(((delik_capi / cap) * 120 * 2) / 2)
-                cv2.circle(canvas, center, d_px_r, (0, 255, 0), 2)
+            canvas = np.zeros((400, 400, 3), dtype="uint8") + 255 # Beyaz zemin
+            r_px = 140
+            center = (200, 200)
             
+            # Ana Daireyi Çiz
+            cv2.circle(canvas, center, r_px, (0, 0, 0), 2)
+            
+            # --- GÖRSELLEŞTİRME MANTIĞI (REVİZE EDİLDİ) ---
+            if delik_sayisi > 0 and delik_capi > 0:
+                d_px_r = int(((delik_capi / cap) * r_px)) 
+                
+                # KURAL: 5 ve altıysa dairesel dağıt, 5'ten fazlaysa tek çiz + yazı
+                if delik_sayisi <= 5:
+                    if delik_sayisi == 1:
+                        # Tekse tam ortaya
+                        cv2.circle(canvas, center, d_px_r, (0, 0, 255), 2)
+                    else:
+                        # Çokluysa etrafa dağıt (Flanş mantığı)
+                        orbit_radius = r_px * 0.6 # Deliklerin dizileceği çember yarıçapı
+                        for i in range(delik_sayisi):
+                            angle = (2 * math.pi / delik_sayisi) * i
+                            dx = int(center[0] + orbit_radius * math.cos(angle))
+                            dy = int(center[1] + orbit_radius * math.sin(angle))
+                            cv2.circle(canvas, (dx, dy), d_px_r, (0, 0, 255), 2)
+                else:
+                    # 5'ten fazla durumu: Tek merkez delik + Yazı
+                    cv2.circle(canvas, center, d_px_r, (0, 0, 255), 2)
+                    
+                    text = f"{delik_sayisi} adet"
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    font_scale = 0.7
+                    thickness = 2
+                    text_size = cv2.getTextSize(text, font, font_scale, thickness)[0]
+                    text_x = center[0] - (text_size[0] // 2)
+                    text_y = center[1] + d_px_r + 30 # Deliğin altına yaz
+                    
+                    cv2.putText(canvas, text, (text_x, text_y), font, font_scale, (0, 0, 0), thickness)
+
+            # Hesaplamalar
             toplam_kesim_mm = math.pi * cap + delik_sayisi * (math.pi * delik_capi)
             net_alan_mm2 = math.pi * (cap/2)**2 - delik_sayisi * (math.pi * (delik_capi/2)**2)
             piercing_sayisi = 1 + delik_sayisi
             genislik, yukseklik = cap, cap
+            
+            canvas_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
 
     with c_sonuc:
-        st.image(canvas, caption=f"{genislik}x{yukseklik}mm", use_container_width=True)
+        # Görseli Göster
+        st.image(canvas_rgb, caption=f"Önizleme: {genislik}x{yukseklik}mm", use_container_width=True)
+        
+        # Maliyet Hesapları
         kesim_m = toplam_kesim_mm / 1000
         sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * PIERCING_SURESI / 60)
         agirlik = (net_alan_mm2 * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
