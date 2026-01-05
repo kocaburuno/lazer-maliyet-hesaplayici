@@ -360,14 +360,17 @@ elif st.session_state.sayfa == 'dxf_analiz':
                     ax.set_aspect('equal', 'datalim')
                     ax.axis('off')
                     
-                    # Figürü Bellekte Resme Çevir
+                    # DÜZELTME: Matplotlib Yeni Sürüm Uyumluluğu
                     fig.canvas.draw()
-                    img_data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-                    img_data = img_data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                    
+                    # buffer_rgba() kullanarak görüntüyü alıyoruz (tostring_rgb yerine)
+                    width, height = fig.canvas.get_width_height()
+                    img_data = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).reshape(height, width, 4)
+                    
                     plt.close(fig)
                     
-                    # OpenCV Formatına (RGB -> BGR)
-                    dxf_img_bgr = cv2.cvtColor(img_data, cv2.COLOR_RGB2BGR)
+                    # OpenCV Formatına (RGBA -> BGR) Dönüştür
+                    dxf_img_bgr = cv2.cvtColor(img_data, cv2.COLOR_RGBA2BGR)
                     
                     # 3. Kontur Analizi
                     gray = cv2.cvtColor(dxf_img_bgr, cv2.COLOR_BGR2GRAY)
