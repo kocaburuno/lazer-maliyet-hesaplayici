@@ -32,39 +32,26 @@ st.markdown("""
         }
         div.stButton > button { min-height: 50px; }
 
-        /* Metric Styling */
-        div[data-testid="metric-container"] {
-            background-color: #f8f9fb;
-            padding: 10px 15px !important;
-            border-radius: 10px;
-            border-left: 5px solid #1C3768;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-            width: auto !important;
-            min-width: 150px !important;
+        /* YENİ TASARIM: Analiz Detay Listesi (Alt Alta Şık Görünüm) */
+        .analiz-bilgi-kutu {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            border-left: 5px solid #1c3768;
+            margin-top: 10px;
         }
-        [data-testid="stMetricValue"] {
-            font-size: 22px !important;
-            font-weight: bold !important;
-            color: #1C3768 !important;
-            white-space: nowrap !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-            display: block !important;
+        .analiz-bilgi-satir {
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 5px;
+            line-height: 1.4;
         }
-        [data-testid="stMetricLabel"] {
-            font-size: 13px !important;
-            font-weight: 600 !important;
-            color: #31333F !important;
-            text-transform: uppercase;
-            white-space: nowrap !important;
-            overflow: visible !important;
+        .analiz-bilgi-deger {
+            font-weight: bold;
+            color: #111;
         }
-        /* Ensure columns don't squeeze metrics */
-        div[data-testid="column"] {
-            width: auto !important;
-            flex: 1 1 auto !important;
-            min-width: fit-content !important;
-        }
+        /* Metric font ayarı (Fiyat Bölümü İçin) */
+        [data-testid="stMetricValue"] { font-size: 1.8rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -226,7 +213,6 @@ elif st.session_state.sayfa == 'foto_analiz':
 
     with c_analiz_ayar:
         st.subheader("Analiz Ayarları")
-        # 1) Yatay Uzunluk Default 100 olarak güncellendi
         referans_olcu = st.number_input(
             "Parçanın Yatay Uzunluğu (mm)", 
             value=100.0, 
@@ -234,7 +220,6 @@ elif st.session_state.sayfa == 'foto_analiz':
             format="%g",
             help="Yüklediğiniz çizimdeki parçanın soldan sağa (yatay) olan gerçek uzunluğunu giriniz."
         )
-        # 2) ve 3) Hassasiyet yazısı ve default değeri (80) güncellendi
         hassasiyet = st.slider("Hassasiyet (Kesim Kontur Yakalama)", 50, 255, 80, step=1)
         st.divider()
         uploaded_file = st.file_uploader("Görsel Yükle (JPG, PNG)", type=['jpg', 'png', 'jpeg'])
@@ -253,7 +238,8 @@ elif st.session_state.sayfa == 'foto_analiz':
                 valid_contour_list = []
                 for i, cnt in enumerate(contours):
                     x, y, w, h = cv2.boundingRect(cnt)
-                    if w > w_img * 0.98 and h > h_img * 0.98: continue
+                    # GÜNCELLENDİ: %98 yerine %96 filtre
+                    if w > w_img * 0.96 and h > h_img * 0.96: continue
                     if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                         valid_contour_list.append(cnt)
 
@@ -290,32 +276,17 @@ elif st.session_state.sayfa == 'foto_analiz':
 
                         st.markdown("### 📋 Teklif Özeti")
                         
-                        st.markdown(f"""
-                        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-                            <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 180px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                                <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Ölçü (mm)</div>
-                                <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)}</div>
-                            </div>
-                            <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 150px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                                <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Kesim</div>
-                                <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{round(kesim_yolu_m * adet, 2)} m</div>
-                            </div>
-                            <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 150px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                                <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Piercing</div>
-                                <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{piercing_basi * adet} ad</div>
-                            </div>
-                            <div style="background-color: #e8f0fe; padding: 15px; border-radius: 10px; border-left: 5px solid #d32f2f; min-width: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                                <div style="font-size: 13px; font-weight: 600; color: #d32f2f; text-transform: uppercase; margin-bottom: 5px;">KDV HARİÇ</div>
-                                <div style="font-size: 28px; font-weight: bold; color: #d32f2f; white-space: nowrap;">{round(toplam_fiyat, 2)} TL</div>
-                                <div style="color: green; font-weight: bold; font-size: 16px; margin-top: 5px;">KDV DAHİL: {round(kdvli_fiyat, 2)} TL</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        with st.expander("🔍 Teknik Detaylar"):
-                            st.write(f"- Parça Ağırlığı (+%15 Fire): {round(agirlik, 2)} kg")
-                            st.write(f"- İşçilik: {round(sure_dk * DK_UCRETI, 2)} TL")
-                            st.write(f"- Malzeme: {round(agirlik * adet * kg_fiyati, 2)} TL")
+                        # GÜNCELLENDİ: Alt alta liste tasarımı ve Süre metriği
+                        cd_f, cf_f = st.columns([1, 1])
+                        with cd_f:
+                            st.markdown(f"""<div class="analiz-bilgi-kutu">
+                                <div class="analiz-bilgi-satir">📏 Ölçü (GxY): <span class="analiz-bilgi-deger">{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm</span></div>
+                                <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
+                                <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_basi * adet} ad</span></div>
+                            </div>""", unsafe_allow_html=True)
+                        with cf_f:
+                            st.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
+                            st.success(f"KDV DAHİL: {round(kdvli_fiyat, 2)} TL")
         else:
              st.info("Lütfen sol taraftan bir çizim görseli yükleyiniz.")
 
@@ -371,28 +342,19 @@ elif st.session_state.sayfa == 'dxf_analiz':
                 
                 st.success(f"✅ Dosya Başarıyla Okundu: {uploaded_dxf.name}")
                 st.markdown("### 📋 Teknik Çizim Teklifi")
-                
-                st.markdown(f"""
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-                    <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 180px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                        <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Ölçü (mm)</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{dxf_genislik}x{dxf_yukseklik}</div>
-                    </div>
-                    <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 150px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                        <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Net Kesim</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{round(kesim_m * adet, 2)} m</div>
-                    </div>
-                    <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 150px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                        <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Nesne/Delik</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{piercing_basi * adet}</div>
-                    </div>
-                    <div style="background-color: #e8f0fe; padding: 15px; border-radius: 10px; border-left: 5px solid #d32f2f; min-width: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                        <div style="font-size: 13px; font-weight: 600; color: #d32f2f; text-transform: uppercase; margin-bottom: 5px;">KDV HARİÇ</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #d32f2f; white-space: nowrap;">{round(toplam_fiyat, 2)} TL</div>
-                        <div style="color: green; font-weight: bold; font-size: 16px; margin-top: 5px;">KDV DAHİL: {round(kdvli_fiyat, 2)} TL</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+
+                # GÜNCELLENDİ: Alt alta liste tasarımı
+                cd_d, cf_d = st.columns([1, 1])
+                with cd_d:
+                    st.markdown(f"""<div class="analiz-bilgi-kutu">
+                        <div class="analiz-bilgi-satir">Tahmini Ölçü: <span class="analiz-bilgi-deger">{dxf_genislik}x{dxf_yukseklik} mm</span></div>
+                        <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
+                        <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_basi * adet} ad</span></div>
+                    </div>""", unsafe_allow_html=True)
+                with cf_d:
+                    st.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
+                    st.success(f"KDV DAHİL: {round(kdvli_fiyat, 2)} TL")
+
             except Exception as e:
                 st.error(f"Hata: {e}")
         else:
@@ -430,8 +392,9 @@ elif st.session_state.sayfa == 'hazir_parca':
                 padding = d_px_r + 10 
                 if delik_sayisi == 1: cv2.circle(canvas, (300, 150), d_px_r, (0, 255, 0), 2)
                 else:
-                    coords = [(start_x + padding, start_y + padding), (start_x + w_px - padding, start_y + padding)]
-                    for i in range(min(delik_sayisi, 2)): cv2.circle(canvas, coords[i], d_px_r, (0, 255, 0), 2)
+                    coords = [(start_x + padding, start_y + padding), (start_x + w_px - padding, start_y + padding),
+                              (start_x + w_px - padding, start_y + h_px - padding), (start_x + padding, start_y + h_px - padding)]
+                    for i in range(min(delik_sayisi, 4)): cv2.circle(canvas, coords[i], d_px_r, (0, 255, 0), 2)
 
             toplam_kesim_mm = 2 * (genislik + yukseklik) + delik_sayisi * (math.pi * delik_capi)
             net_alan_mm2 = (genislik * yukseklik) - delik_sayisi * (math.pi * (delik_capi/2)**2)
@@ -464,24 +427,14 @@ elif st.session_state.sayfa == 'hazir_parca':
         
         st.markdown("### 📋 Teklif Özeti")
         
-        st.markdown(f"""
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-            <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 180px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Ölçü (mm)</div>
-                <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{genislik}x{yukseklik}</div>
-            </div>
-            <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 150px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Kesim</div>
-                <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{round(kesim_m * adet, 2)} m</div>
-            </div>
-            <div style="background-color: #f8f9fb; padding: 15px; border-radius: 10px; border-left: 5px solid #1C3768; min-width: 150px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                <div style="font-size: 13px; font-weight: 600; color: #31333F; text-transform: uppercase; margin-bottom: 5px;">Piercing</div>
-                <div style="font-size: 24px; font-weight: bold; color: #1C3768; white-space: nowrap;">{piercing_sayisi * adet} ad</div>
-            </div>
-            <div style="background-color: #e8f0fe; padding: 15px; border-radius: 10px; border-left: 5px solid #d32f2f; min-width: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                <div style="font-size: 13px; font-weight: 600; color: #d32f2f; text-transform: uppercase; margin-bottom: 5px;">KDV HARİÇ</div>
-                <div style="font-size: 28px; font-weight: bold; color: #d32f2f; white-space: nowrap;">{round(toplam_fiyat, 2)} TL</div>
-                <div style="color: green; font-weight: bold; font-size: 16px; margin-top: 5px;">KDV DAHİL: {round(kdvli_fiyat, 2)} TL</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # GÜNCELLENDİ: Alt alta liste tasarımı
+        cd_h, cf_h = st.columns([1, 1])
+        with cd_h:
+            st.markdown(f"""<div class="analiz-bilgi-kutu">
+                <div class="analiz-bilgi-satir">📏 Ölçü: <span class="analiz-bilgi-deger">{genislik} x {yukseklik} mm</span></div>
+                <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
+                <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_sayisi * adet} ad</span></div>
+            </div>""", unsafe_allow_html=True)
+        with cf_h:
+            st.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
+            st.success(f"KDV DAHİL: {round(kdvli_fiyat, 2)} TL")
