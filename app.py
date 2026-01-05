@@ -7,8 +7,15 @@ import tempfile
 import os
 
 # --- KÜTÜPHANE KONTROLÜ ---
+# DXF Görselleştirme ve Çizim için gerekli kütüphaneler
 try:
     import ezdxf
+    from ezdxf import bbox
+    import matplotlib
+    matplotlib.use('Agg') # Streamlit için GUI olmayan backend
+    import matplotlib.pyplot as plt
+    from ezdxf.addons.drawing import RenderContext, Frontend
+    from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
     dxf_active = True
 except ImportError:
     dxf_active = False
@@ -83,10 +90,10 @@ def sayfa_degistir(sayfa_adi):
     st.session_state.sayfa = sayfa_adi
 
 # --- 4. SABİT PARAMETRELER ---
-DK_UCRETI = 25.0       
-PIERCING_SURESI = 2.0  
+DK_UCRETI = 25.0        
+PIERCING_SURESI = 2.0   
 FIRE_ORANI = 1.15 
-KDV_ORANI = 1.20  
+KDV_ORANI = 1.20   
 
 VERİ = {
     "Siyah Sac": {
@@ -199,7 +206,7 @@ if st.session_state.sayfa == 'anasayfa':
         
         **Özellikler:**
         * Yalnızca DXF Desteği
-        * Net Kesim Yolu Hesabı
+        * Yaylar (ARC) ve Birleşik Çizgiler
         * Otomatik Yerleşim (Nesting)
         """)
         if st.button("ÇİZİM DOSYASI YÜKLE", use_container_width=True, type="primary"):
@@ -295,7 +302,7 @@ elif st.session_state.sayfa == 'foto_analiz':
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
 
-# === DURUM C: TEKNİK ÇİZİM ANALİZ (YENİLENMİŞ DXF GÖRSELLEŞTİRME) ===
+# === DURUM C: TEKNİK ÇİZİM ANALİZ (GÜNCELLENMİŞ GÖRSELLEŞTİRME VE HESAPLAMA) ===
 elif st.session_state.sayfa == 'dxf_analiz':
     if st.button("⬅️ Ana Menüye Dön"):
         sayfa_degistir('anasayfa')
@@ -307,10 +314,10 @@ elif st.session_state.sayfa == 'dxf_analiz':
     with c_dxf_ayar:
         st.subheader("Teknik Çizim Yükle")
         if not dxf_active:
-            st.warning("⚠️ DXF modülü için 'ezdxf' kütüphanesi gereklidir.")
+            st.warning("⚠️ 'ezdxf' veya 'matplotlib' kütüphanesi eksik.")
         
-        # YENİ: Hassasiyet ayarı DXF bölümüne de eklendi
-        hassasiyet_dxf = st.slider("Hassasiyet (Kontur Yakalama)", 50, 255, 120, step=1)
+        # Hassasiyet ayarı DXF bölümüne de eklendi
+        hassasiyet_dxf = st.slider("Hassasiyet (Kontur Yakalama)", 50, 255, 100, step=1)
         uploaded_dxf = st.file_uploader("Dosya Seç (Sadece DXF)", type=['dxf'])
 
     with c_dxf_sonuc:
@@ -325,100 +332,106 @@ elif st.session_state.sayfa == 'dxf_analiz':
                 msp = doc.modelspace()
                 os.remove(tmp_path)
 
-                # 2. Çizim Verilerini Topla ve Görselleştirme İçin Hazırla
-                all_x, all_y = [], []
-                lines = []
-                circles = []
+                # 2. REVİZE EDİLEN KISIM: MATPLOTLIB İLE GÖRSELLEŞTİRME
+                # Arkaplan: Koyu (#111827), Çizgiler: Beyaz (#FFFFFF)
                 
-                for e in msp:
-                    if e.dxftype() == 'LINE':
-                        start, end = e.dxf.start, e.dxf.end
-                        lines.append((start, end))
-                        all_x.extend([start.x, end.x])
-                        all_y.extend([start.y, end.y])
-                    elif e.dxftype() == 'CIRCLE':
-                        c, r = e.dxf.center, e.dxf.radius
-                        circles.append((c, r))
-                        all_x.extend([c.x - r, c.x + r])
-                        all_y.extend([c.y - r, c.y + r])
-                    # ARC vb. eklenebilir, şimdilik temel hatlar
-
-                # 3. Görsel (Canvas) Oluştur (Beyaz Zemin Üzerine Siyah Çizim)
-                if all_x and all_y:
-                    min_x, max_x = min(all_x), max(all_x)
-                    min_y, max_y = min(all_y), max(all_y)
-                    w_real = max_x - min_x
-                    h_real = max_y - min_y
+                # Gerçek Boyutları Hesapla (Bounding Box)
+                bbox_cache = bbox.extents(msp)
+                w_real = bbox_cache.extmax.x - bbox_cache.extmin.x
+                h_real = bbox_cache.extmax.y - bbox_cache.extmin.y
+                
+                if w_real > 0 and h_real > 0:
+                    # Matplotlib Figürü Oluştur (Koyu Arkaplan)
+                    fig = plt.figure(figsize=(10, 10), facecolor='#111827')
+                    ax = fig.add_axes([0, 0, 1, 1])
+                    ax.set_facecolor('#111827')
                     
-                    # Yüksek çözünürlük hedefle
-                    canvas_w_px = 2000 
-                    scale_factor = (canvas_w_px - 100) / w_real if w_real > 0 else 1.0
-                    canvas_h_px = int(h_real * scale_factor) + 100
+                    # Çizim Context Oluştur ve Renkleri Beyaza Zorla
+                    ctx = RenderContext(doc)
+                    for layer in ctx.layers.values():
+                        layer.color = '#FFFFFF' # Tüm katmanlar BEYAZ
                     
-                    # Beyaz Tuval (255)
-                    dxf_img = np.ones((canvas_h_px, canvas_w_px, 3), dtype="uint8") * 255
+                    # Çizimi Yap (ARC ve POLYLINE otomatik çizilir)
+                    out = MatplotlibBackend(ax)
+                    Frontend(ctx, out).draw_layout(msp, finalize=True)
                     
-                    def to_pixel(point_x, point_y):
-                        px = int((point_x - min_x) * scale_factor) + 50
-                        # Y eksenini ters çevir (DXF yukarı artar, Resim aşağı artar)
-                        py = canvas_h_px - (int((point_y - min_y) * scale_factor) + 50)
-                        return (px, py)
-
-                    # Çizgileri SİYAH (0,0,0) çiz
-                    for start, end in lines:
-                        cv2.line(dxf_img, to_pixel(start.x, start.y), to_pixel(end.x, end.y), (0, 0, 0), 2)
+                    ax.set_aspect('equal', 'datalim')
+                    ax.axis('off')
                     
-                    for c, r in circles:
-                        center_px = to_pixel(c.x, c.y)
-                        radius_px = int(r * scale_factor)
-                        cv2.circle(dxf_img, center_px, radius_px, (0, 0, 0), 2)
+                    # Figürü Resme Çevir (OpenCV ile işlenebilecek hale getir)
+                    fig.canvas.draw()
                     
-                    # 4. Tıpkı Fotoğraftan Analiz Gibi İşle (OpenCV)
-                    gray = cv2.cvtColor(dxf_img, cv2.COLOR_BGR2GRAY)
-                    _, binary = cv2.threshold(gray, hassasiyet_dxf, 255, cv2.THRESH_BINARY_INV)
+                    # Buffer'dan numpy array'e dönüştür
+                    img_data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+                    img_data = img_data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                    
+                    plt.close(fig) # Bellek temizliği
+                    
+                    # OpenCV Formatına Dönüştür (RGB -> BGR)
+                    dxf_img_bgr = cv2.cvtColor(img_data, cv2.COLOR_RGB2BGR)
+                    
+                    # 3. Kontur Analizi ve Hesaplama (Görüntü İşleme)
+                    gray = cv2.cvtColor(dxf_img_bgr, cv2.COLOR_BGR2GRAY)
+                    _, binary = cv2.threshold(gray, hassasiyet_dxf, 255, cv2.THRESH_BINARY)
                     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
                     
                     valid_cnts = []
                     if contours and hierarchy is not None:
                         for i, cnt in enumerate(contours):
-                            # Çok küçük gürültüleri ele
-                            if cv2.contourArea(cnt) < 10: continue 
-                            if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
-                                valid_cnts.append(cnt)
+                            if cv2.contourArea(cnt) < 5: continue 
+                            # Matplotlib renderında dış çerçeve oluşabilir, onu elemek gerekebilir
+                            # Ancak ax.axis('off') dediğimiz için genelde temiz gelir.
+                            valid_cnts.append(cnt)
                     
-                    # 5. Sonuçları Göster (Yeşil Kontur ile)
-                    result_img = dxf_img.copy()
-                    cv2.drawContours(result_img, valid_cnts, -1, (0, 255, 0), 4) # Yeşil Kontur
-                    st.image(result_img, caption=f"DXF Görselleştirme ve Analiz: {uploaded_dxf.name}", use_container_width=True)
+                    # Sonuç Gösterimi (Yeşil Kontur Çizgisi Eklenmiş Halde)
+                    result_img = dxf_img_bgr.copy()
+                    cv2.drawContours(result_img, valid_cnts, -1, (0, 255, 0), 2)
+                    st.image(result_img, caption=f"DXF Görselleştirme: {uploaded_dxf.name}", use_container_width=True)
                     
-                    # 6. Hesaplama (Pikselden Gerçeğe Dönüş)
-                    # DXF zaten 1:1 ölçekli olduğu için 'scale_factor' ile geri dönüyoruz
+                    # 4. Hesaplamalar
+                    # Pikseller üzerinden değil, çizimden gelen w_real, h_real kullanılır.
+                    # Ancak kesim yolu uzunluğunu (cut length) görselden tahmin etmek yerine
+                    # görsel üzerindeki piksel/mm oranını bularak hesaplarız.
                     
-                    toplam_piksel_yol = sum([cv2.arcLength(c, True) for c in valid_cnts])
-                    kesim_m = (toplam_piksel_yol / scale_factor) / 1000.0 # mm -> m
-                    piercing_basi = len(valid_cnts)
+                    # Görseldeki genişlik (pixel)
+                    h_px_img, w_px_img = dxf_img_bgr.shape[:2]
                     
-                    sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
-                    agirlik = (w_real * h_real * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
+                    # Ölçek Faktörü (1 mm kaç piksel?)
+                    # Matplotlib "equal aspect" kullandığı için oran sabittir.
+                    # Bounding box'ı tekrar görsel üzerinde ölçelim (margin boşlukları olduğu için)
+                    all_pts = np.concatenate(valid_cnts) if valid_cnts else None
                     
-                    toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
-                    kdvli_fiyat = toplam_fiyat * KDV_ORANI
-                    
-                    st.success(f"✅ Analiz Başarılı: {uploaded_dxf.name}")
-                    st.markdown("### 📋 Teknik Çizim Teklifi")
-                    
-                    cd_d, cf_d = st.columns([1, 1])
-                    with cd_d:
-                        st.markdown(f"""<div class="analiz-bilgi-kutu">
-                            <div class="analiz-bilgi-satir">Tahmini Ölçü: <span class="analiz-bilgi-deger">{round(w_real, 1)} x {round(h_real, 1)} mm</span></div>
-                            <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
-                            <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_basi * adet} ad</span></div>
-                        </div>""", unsafe_allow_html=True)
-                    with cf_d:
-                        st.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
-                        st.success(f"KDV DAHİL: {round(kdvli_fiyat, 2)} TL")
+                    if all_pts is not None:
+                        x_p, y_p, w_p, h_p = cv2.boundingRect(all_pts)
+                        scale_ratio = w_real / w_p # mm / pixel
+                        
+                        toplam_piksel_yol = sum([cv2.arcLength(c, True) for c in valid_cnts])
+                        kesim_m = (toplam_piksel_yol * scale_ratio) / 1000.0 # metre
+                        piercing_basi = len(valid_cnts)
+                        
+                        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+                        agirlik = (w_real * h_real * kalinlik * VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
+                        
+                        toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
+                        kdvli_fiyat = toplam_fiyat * KDV_ORANI
+                        
+                        st.success(f"✅ Analiz Başarılı: {uploaded_dxf.name}")
+                        st.markdown("### 📋 Teknik Çizim Teklifi")
+                        
+                        cd_d, cf_d = st.columns([1, 1])
+                        with cd_d:
+                            st.markdown(f"""<div class="analiz-bilgi-kutu">
+                                <div class="analiz-bilgi-satir">Tahmini Ölçü: <span class="analiz-bilgi-deger">{round(w_real, 1)} x {round(h_real, 1)} mm</span></div>
+                                <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
+                                <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_basi * adet} ad</span></div>
+                            </div>""", unsafe_allow_html=True)
+                        with cf_d:
+                            st.metric("KDV HARİÇ", f"{round(toplam_fiyat, 2)} TL")
+                            st.success(f"KDV DAHİL: {round(kdvli_fiyat, 2)} TL")
+                    else:
+                        st.warning("Görsel üzerinde kontur algılanamadı.")
                 else:
-                    st.warning("DXF dosyasında çizim verisi bulunamadı veya desteklenmeyen format.")
+                    st.warning("DXF dosyasında çizim verisi (Line, Arc, Circle vb.) bulunamadı.")
 
             except Exception as e:
                 st.error(f"Hata: {e}")
