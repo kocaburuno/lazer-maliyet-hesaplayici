@@ -218,7 +218,7 @@ if st.session_state.sayfa == 'anasayfa':
     with c2:
         st.warning("📐 **TEKNİK ÇİZİM ANALİZİ (DXF)**")
         st.markdown("""
-        Vektörel çizim dosyalarınızı (DXF) doğrudan yükleyerek %100 hassas sonuç alın.
+        Vektörel çizim dosyanızı doğrudan yükleyerek %100 hassas sonuç alın.
         
         **Özellikler:**
         * **Yalnızca DXF Desteği**
