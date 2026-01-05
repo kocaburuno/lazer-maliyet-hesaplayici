@@ -1,4 +1,34 @@
 import streamlit as st
+import sys
+import subprocess
+import importlib.util
+
+# --- 0. OTOMATİK KÜTÜPHANE YÜKLEYİCİ (Terminal Açmadan Çözüm) ---
+def kutuphane_kontrol_ve_yukle():
+    gerekli_paketler = ['ezdxf', 'matplotlib']
+    yuklenen_var = False
+    
+    for paket in gerekli_paketler:
+        spec = importlib.util.find_spec(paket)
+        if spec is None:
+            placeholder = st.empty()
+            placeholder.warning(f"⚠️ '{paket}' kütüphanesi eksik. Arka planda otomatik yükleniyor... Lütfen bekleyin.")
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", paket])
+                placeholder.success(f"✅ '{paket}' başarıyla yüklendi!")
+                yuklenen_var = True
+            except Exception as e:
+                st.error(f"Otomatik yükleme başarısız oldu: {e}")
+    
+    if yuklenen_var:
+        st.success("Tüm gereksinimler sağlandı. Uygulama yeniden başlatılıyor...")
+        st.rerun()
+
+# Sayfa ayarlarından önce kontrolü çalıştır
+st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide")
+kutuphane_kontrol_ve_yukle()
+
+# --- STANDART IMPORTLAR ---
 from PIL import Image
 import cv2
 import numpy as np
@@ -6,18 +36,18 @@ import math
 import tempfile
 import os
 
-# --- KÜTÜPHANE KONTROLÜ ---
-# DXF Görselleştirme ve Çizim için gerekli kütüphaneler
+# --- KÜTÜPHANE IMPORTLARI (Artık Yüklü Olduğundan Eminiz) ---
 try:
     import ezdxf
     from ezdxf import bbox
     import matplotlib
-    matplotlib.use('Agg') # Streamlit için GUI olmayan backend
+    matplotlib.use('Agg') # GUI olmadan çalışması için
     import matplotlib.pyplot as plt
     from ezdxf.addons.drawing import RenderContext, Frontend
     from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
     dxf_active = True
 except ImportError:
+    # Otomatik yükleyici çalışmazsa burası son güvenlik ağıdır
     dxf_active = False
 
 # --- 1. AYARLAR VE FAVICON ---
@@ -26,7 +56,7 @@ try:
 except:
     fav_icon = None 
 
-st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
+# st.set_page_config yukarıda çağrıldı, burayı geçiyoruz.
 
 # --- 2. CSS STİL AYARLAMALARI ---
 st.markdown("""
@@ -302,7 +332,7 @@ elif st.session_state.sayfa == 'foto_analiz':
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
 
-# === DURUM C: TEKNİK ÇİZİM ANALİZ (GÜNCELLENMİŞ GÖRSELLEŞTİRME VE HESAPLAMA) ===
+# === DURUM C: TEKNİK ÇİZİM ANALİZ (YENİLENMİŞ DXF GÖRSELLEŞTİRME) ===
 elif st.session_state.sayfa == 'dxf_analiz':
     if st.button("⬅️ Ana Menüye Dön"):
         sayfa_degistir('anasayfa')
@@ -314,9 +344,8 @@ elif st.session_state.sayfa == 'dxf_analiz':
     with c_dxf_ayar:
         st.subheader("Teknik Çizim Yükle")
         if not dxf_active:
-            st.warning("⚠️ 'ezdxf' veya 'matplotlib' kütüphanesi eksik.")
+            st.error("⚠️ Kütüphaneler hala yüklenemedi. Lütfen internet bağlantısını kontrol edip uygulamayı yeniden başlatın.")
         
-        # Hassasiyet ayarı DXF bölümüne de eklendi
         hassasiyet_dxf = st.slider("Hassasiyet (Kontur Yakalama)", 50, 255, 100, step=1)
         uploaded_dxf = st.file_uploader("Dosya Seç (Sadece DXF)", type=['dxf'])
 
@@ -379,8 +408,6 @@ elif st.session_state.sayfa == 'dxf_analiz':
                     if contours and hierarchy is not None:
                         for i, cnt in enumerate(contours):
                             if cv2.contourArea(cnt) < 5: continue 
-                            # Matplotlib renderında dış çerçeve oluşabilir, onu elemek gerekebilir
-                            # Ancak ax.axis('off') dediğimiz için genelde temiz gelir.
                             valid_cnts.append(cnt)
                     
                     # Sonuç Gösterimi (Yeşil Kontur Çizgisi Eklenmiş Halde)
@@ -389,16 +416,8 @@ elif st.session_state.sayfa == 'dxf_analiz':
                     st.image(result_img, caption=f"DXF Görselleştirme: {uploaded_dxf.name}", use_container_width=True)
                     
                     # 4. Hesaplamalar
-                    # Pikseller üzerinden değil, çizimden gelen w_real, h_real kullanılır.
-                    # Ancak kesim yolu uzunluğunu (cut length) görselden tahmin etmek yerine
-                    # görsel üzerindeki piksel/mm oranını bularak hesaplarız.
-                    
-                    # Görseldeki genişlik (pixel)
                     h_px_img, w_px_img = dxf_img_bgr.shape[:2]
                     
-                    # Ölçek Faktörü (1 mm kaç piksel?)
-                    # Matplotlib "equal aspect" kullandığı için oran sabittir.
-                    # Bounding box'ı tekrar görsel üzerinde ölçelim (margin boşlukları olduğu için)
                     all_pts = np.concatenate(valid_cnts) if valid_cnts else None
                     
                     if all_pts is not None:
@@ -436,7 +455,8 @@ elif st.session_state.sayfa == 'dxf_analiz':
             except Exception as e:
                 st.error(f"Hata: {e}")
         else:
-            st.info("Lütfen .DXF uzantılı çizim dosyanızı yükleyiniz.")
+            if not uploaded_dxf:
+                st.info("Lütfen .DXF uzantılı çizim dosyanızı yükleyiniz.")
 
 # === DURUM D: HAZIR PARÇA OLUŞTURMA SAYFASI ===
 elif st.session_state.sayfa == 'hazir_parca':
