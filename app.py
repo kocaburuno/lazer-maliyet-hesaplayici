@@ -303,21 +303,22 @@ elif st.session_state.sayfa == 'foto_analiz':
                     kdvli_fiyat = fiyat * KDV_ORANI
 
                     st.markdown("### 📋 Teklif Özeti")
-                    cd_d, cf_d = st.columns([1, 1])
-                    with cd_d:
+                    cd_f, cf_f = st.columns([1, 1])
+                    with cd_f:
                         st.markdown(f"""<div class="analiz-bilgi-kutu">
-                            <div class="analiz-bilgi-satir">Tahmini Ölçü: <span class="analiz-bilgi-deger">{round(w_real, 1)} x {round(h_real, 1)} mm</span></div>
+                            <div class="analiz-bilgi-satir">📏 Ölçü (GxY): <span class="analiz-bilgi-deger">{round(gercek_genislik, 1)} x {round(gercek_yukseklik, 1)} mm</span></div>
                             <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
-                            <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_basi * adet} ad</span></div>
+                            <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{kontur_ad * adet} ad</span></div>
                         </div>""", unsafe_allow_html=True)
-                    with cf_d:
-                        st.markdown(f"""<div class="analiz-bilgi-kutu">
-                            <div class="analiz-bilgi-satir" style="text-transform: uppercase; font-weight: 600;">KDV HARİÇ</div>
-                            <div style="font-size: 28px; font-weight: bold; color: #1C3768; margin-bottom: 8px;">{round(toplam_fiyat, 2)} TL</div>
-                            <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 3px solid #166534;">
-                                KDV DAHİL: {round(kdvli_fiyat, 2)} TL
-                            </div>
-                        </div>""", unsafe_allow_html=True)
+                    with cf_f:
+    
+                    st.markdown(f"""<div class="analiz-bilgi-kutu">
+                        <div class="analiz-bilgi-satir" style="color: #31333F; font-weight: 600; text-transform: uppercase;">KDV HARİÇ</div>
+                        <div style="font-size: 28px; font-weight: bold; color: #1C3768; margin-bottom: 8px;">{round(fiyat, 2)} TL</div>
+                        <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 5px solid #166534;">
+                            KDV DAHİL: {round(kdvli_fiyat, 2)} TL
+                        </div>
+                    </div>""", unsafe_allow_html=True)
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
 
@@ -567,18 +568,18 @@ elif st.session_state.sayfa == 'hazir_parca':
         kdvli_fiyat = toplam_fiyat * KDV_ORANI
         
         st.markdown("### 📋 Teklif Özeti")
-        cd_d, cf_d = st.columns([1, 1])
-        with cd_d:
+        cd_h, cf_h = st.columns([1, 1])
+        with cd_h:
             st.markdown(f"""<div class="analiz-bilgi-kutu">
-                <div class="analiz-bilgi-satir">Tahmini Ölçü: <span class="analiz-bilgi-deger">{round(w_real, 1)} x {round(h_real, 1)} mm</span></div>
-                <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
-                <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_basi * adet} ad</span></div>
+                <div class="analiz-bilgi-satir">📏 Ölçü: <span class="analiz-bilgi-deger">{genislik} x {yukseklik} mm</span></div>
+                 <div class="analiz-bilgi-satir">⏱ Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
+                <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{piercing_sayisi * adet} ad</span></div>
             </div>""", unsafe_allow_html=True)
-        with cf_d:
+        with cf_h:
             st.markdown(f"""<div class="analiz-bilgi-kutu">
-                <div class="analiz-bilgi-satir" style="text-transform: uppercase; font-weight: 600;">KDV HARİÇ</div>
+                <div class="analiz-bilgi-satir" style="color: #31333F; font-weight: 600; text-transform: uppercase;">KDV HARİÇ</div>
                 <div style="font-size: 28px; font-weight: bold; color: #1C3768; margin-bottom: 8px;">{round(toplam_fiyat, 2)} TL</div>
-                <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 3px solid #166534;">
+                <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 5px solid #166534;">
                     KDV DAHİL: {round(kdvli_fiyat, 2)} TL
                 </div>
-            </div>""", unsafe_allow_html=True)
+             </div>""", unsafe_allow_html=True)
