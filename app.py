@@ -311,14 +311,13 @@ elif st.session_state.sayfa == 'foto_analiz':
                             <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing Patlatma): <span class="analiz-bilgi-deger">{kontur_ad * adet} ad</span></div>
                         </div>""", unsafe_allow_html=True)
                     with cf_f:
-    
-                    st.markdown(f"""<div class="analiz-bilgi-kutu">
-                        <div class="analiz-bilgi-satir" style="color: #31333F; font-weight: 600; text-transform: uppercase;">KDV HARİÇ</div>
-                        <div style="font-size: 28px; font-weight: bold; color: #1C3768; margin-bottom: 8px;">{round(fiyat, 2)} TL</div>
-                        <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 5px solid #166534;">
-                            KDV DAHİL: {round(kdvli_fiyat, 2)} TL
-                        </div>
-                    </div>""", unsafe_allow_html=True)
+                        st.markdown(f"""<div class="analiz-bilgi-kutu">
+                            <div class="analiz-bilgi-satir" style="color: #31333F; font-weight: 600; text-transform: uppercase;">KDV HARİÇ</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #1C3768; margin-bottom: 8px;">{round(fiyat, 2)} TL</div>
+                            <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 5px solid #166534;">
+                                KDV DAHİL: {round(kdvli_fiyat, 2)} TL
+                            </div>
+                        </div>""", unsafe_allow_html=True)
                     
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
@@ -423,7 +422,8 @@ elif st.session_state.sayfa == 'dxf_analiz':
                         kdvli_fiyat = toplam_fiyat * KDV_ORANI
                         
                         st.success(f"✅ Analiz Başarılı: {uploaded_dxf.name}")
-                        st.markdown("### 📋 Teknik Çizim Teklifi")
+                        st.markdown("### 📋 Teklif Özeti")
+                        
                         cd_d, cf_d = st.columns([1, 1])
                         with cd_d:
                             st.markdown(f"""<div class="analiz-bilgi-kutu">
@@ -583,4 +583,4 @@ elif st.session_state.sayfa == 'hazir_parca':
                 <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 5px solid #166534;">
                     KDV DAHİL: {round(kdvli_fiyat, 2)} TL
                 </div>
-             </div>""", unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
