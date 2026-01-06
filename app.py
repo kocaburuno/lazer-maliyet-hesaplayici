@@ -10,6 +10,59 @@ import io
 # --- HARİCİ VERİ DOSYASINDAN OKUMA ---
 import materials  # materials.py dosyasını dahil ediyoruz
 
+from fpdf import FPDF
+
+def generate_pdf(data_dict):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Başlık ve Logo Alanı
+    pdf.set_font("helvetica", "B", 16)
+    pdf.cell(0, 10, "ALAN LAZER TEKLIF FORMU", ln=True, align="C")
+    pdf.set_font("helvetica", "", 10)
+    pdf.cell(0, 10, "www.alanlazer.com", ln=True, align="C")
+    pdf.line(10, 30, 200, 30)
+    pdf.ln(10)
+    
+    # Malzeme Bilgileri
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(0, 10, "Malzeme Bilgileri", ln=True)
+    pdf.set_font("helvetica", "", 10)
+    pdf.cell(95, 8, f"Metal Turu: {data_dict['metal']}", border=1)
+    pdf.cell(95, 8, f"Kalinlik: {data_dict['kalinlik']} mm", border=1, ln=True)
+    pdf.cell(95, 8, f"Adet: {data_dict['adet']}", border=1)
+    pdf.cell(95, 8, f"Plaka Boyutu: {data_dict['plaka']}", border=1, ln=True)
+    pdf.ln(5)
+    
+    # Analiz Sonuclari
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(0, 10, "Analiz Detaylari", ln=True)
+    pdf.set_font("helvetica", "", 10)
+    pdf.cell(95, 8, f"Olcu: {data_dict['olcu']}", border=1)
+    pdf.cell(95, 8, f"Kesim Suresi: {data_dict['sure']} dk", border=1, ln=True)
+    pdf.cell(95, 8, f"Kontur Sayisi: {data_dict['kontur']} ad", border=1)
+    pdf.cell(95, 8, f"Kesim Hizi: {data_dict['hiz']} mm/dk", border=1, ln=True)
+    pdf.ln(5)
+    
+    # Fiyatlandirma
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(0, 10, "Fiyatlandirma", ln=True)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.cell(95, 10, f"TOPLAM (KDV HARIC):", border=1)
+    pdf.set_text_color(28, 55, 104) # Lacivert
+    pdf.cell(95, 10, f"{data_dict['fiyat_haric']} TL", border=1, ln=True, align="R")
+    
+    pdf.set_text_color(22, 101, 52) # Yesil
+    pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):", border=1)
+    pdf.cell(95, 10, f"{data_dict['fiyat_dahil']} TL", border=1, ln=True, align="R")
+    
+    pdf.ln(10)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("helvetica", "I", 8)
+    pdf.cell(0, 10, "Bu belge sistem tarafindan otomatik olarak olusturulmustur.", align="C")
+    
+    return pdf.output()
+    
 # --- KÜTÜPHANE KONTROLÜ (Hata Yönetimi) ---
 try:
     import ezdxf
