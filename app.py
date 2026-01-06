@@ -247,22 +247,23 @@ if st.session_state.sayfa == 'anasayfa':
     
     c1, c2, c3 = st.columns(3, gap="medium")
     
-    # Butonları hizalamak için metin kutularına sabit minimum yükseklik veriyoruz
-    # Bu değer (200px) ekran çözünürlüğü değişse bile butonları aşağı iter.
-    text_box_style = "min-height: 200px; display: flex; flex-direction: column; justify-content: flex-start;"
+    # Kutucukların içeriği ne kadar kısa veya uzun olursa olsun
+    # metin alanı en az 220px yer kaplayacak. Böylece butonlar hep aynı hizada başlar.
+    box_style = "min-height: 220px; display: flex; flex-direction: column;"
     
     with c1:
         st.info("📸 **FOTOĞRAFTAN ANALİZ**")
         st.markdown(f"""
-        <div style="{text_box_style}">
-            <p>Fotoğraf veya eskiz görsellerini yükleyin. <b>AI görüntü işleme algoritmamız</b> işini yapsın.</p>
-            <p><b>Özellikler:</b></p>
-            <ul>
+        <div style="{box_style}">
+            <p style="margin-bottom: 10px;">Fotoğraf veya eskiz görsellerini yükleyin. <b>AI görüntü işleme algoritmamız</b> işini yapsın.</p>
+            <p style="margin-bottom: 5px;"><b>Özellikler:</b></p>
+            <ul style="margin-top: 0;">
                 <li>JPG, PNG formatı</li>
                 <li>Referans Ölçü ile Ölçekleme</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
+        
         if st.button("FOTOĞRAF YÜKLE", use_container_width=True, type="primary"):
             sayfa_degistir('foto_analiz')
             st.rerun()
@@ -270,15 +271,16 @@ if st.session_state.sayfa == 'anasayfa':
     with c2:
         st.warning("📐 **TEKNİK ÇİZİM ANALİZİ (DXF)**")
         st.markdown(f"""
-        <div style="{text_box_style}">
-            <p>Vektörel çizim dosyanızı doğrudan yükleyerek %100 hassas sonuç alın.</p>
-            <p><b>Özellikler:</b></p>
-            <ul>
+        <div style="{box_style}">
+            <p style="margin-bottom: 10px;">Vektörel çizim dosyanızı doğrudan yükleyerek %100 hassas sonuç alın.</p>
+            <p style="margin-bottom: 5px;"><b>Özellikler:</b></p>
+            <ul style="margin-top: 0;">
                 <li>Yalnızca DXF Desteği</li>
                 <li>Otomatik Yerleşim (Nesting)</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
+        
         if st.button("ÇİZİM DOSYASI YÜKLE", use_container_width=True, type="primary"):
             sayfa_degistir('dxf_analiz')
             st.rerun()
@@ -286,15 +288,16 @@ if st.session_state.sayfa == 'anasayfa':
     with c3:
         st.success("🛠 **HAZIR PARÇA OLUŞTUR**")
         st.markdown(f"""
-        <div style="{text_box_style}">
-            <p>Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) manuel oluşturun.</p>
-            <p><b>Özellikler:</b></p>
-            <ul>
+        <div style="{box_style}">
+            <p style="margin-bottom: 10px;">Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) manuel oluşturun.</p>
+            <p style="margin-bottom: 5px;"><b>Özellikler:</b></p>
+            <ul style="margin-top: 0;">
                 <li>Kare, Dikdörtgen, Daire</li>
                 <li>Delik Tanımlama</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
+        
         if st.button("MANUEL PARÇA OLUŞTUR", use_container_width=True, type="primary"):
             sayfa_degistir('hazir_parca')
             st.rerun()
