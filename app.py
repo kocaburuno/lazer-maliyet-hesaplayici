@@ -12,56 +12,92 @@ import materials  # materials.py dosyasını dahil ediyoruz
 
 from fpdf import FPDF
 
-# --- PDF OLUŞTURMA FONKSİYONU ---
-def generate_pdf(data_dict):
+# --- PDF OLUŞTURMA FONKSİYONU (GÖRSEL DESTEKLİ) ---
+def generate_pdf(data_dict, image_path=None):
     try:
         pdf = FPDF()
         pdf.add_page()
         
-        # Başlık ve Logo Alanı
+        # --- 1. HEADER & LOGO ---
         pdf.set_font("helvetica", "B", 16)
         pdf.cell(0, 10, "ALAN LAZER TEKLIF FORMU", ln=True, align="C")
         pdf.set_font("helvetica", "", 10)
         pdf.cell(0, 10, "www.alanlazer.com", ln=True, align="C")
         pdf.line(10, 30, 200, 30)
+        pdf.ln(5)
+        
+        # --- 2. PARÇA GÖRSELİ ---
+        if image_path and os.path.exists(image_path):
+            # Görseli sayfanın ortasına yerleştir (x=60, w=90mm)
+            pdf.image(image_path, x=60, y=35, w=90)
+            pdf.ln(95) # Görselden sonra boşluk bırak (Görsel yüksekliğine göre ayarlandı)
+        else:
+            pdf.ln(20)
+
+        # --- 3. MALZEME BİLGİLERİ ---
+        pdf.set_font("helvetica", "B", 12)
+        pdf.set_fill_color(240, 240, 240) # Hafif gri arka plan
+        pdf.cell(0, 8, "  MALZEME BILGILERI", ln=True, fill=True)
+        pdf.ln(2)
+        
+        pdf.set_font("helvetica", "", 10)
+        # Tablo benzeri yapı
+        pdf.cell(40, 8, "Metal Turu:", border=0)
+        pdf.cell(55, 8, f"{data_dict.get('metal', '-')}", border=1)
+        pdf.cell(10, 8, "", border=0) # Boşluk
+        pdf.cell(40, 8, "Kalinlik:", border=0)
+        pdf.cell(45, 8, f"{data_dict.get('kalinlik', '-')} mm", border=1, ln=True)
+        
+        pdf.ln(1)
+        pdf.cell(40, 8, "Plaka Boyutu:", border=0)
+        pdf.cell(55, 8, f"{data_dict.get('plaka', '-')}", border=1)
+        pdf.cell(10, 8, "", border=0)
+        pdf.cell(40, 8, "Adet:", border=0)
+        pdf.cell(45, 8, f"{data_dict.get('adet', '-')}", border=1, ln=True)
+        pdf.ln(5)
+        
+        # --- 4. ANALİZ VE TEKNİK DETAYLAR ---
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 8, "  TEKNIK ANALIZ OZETI", ln=True, fill=True)
+        pdf.ln(2)
+        
+        pdf.set_font("helvetica", "", 10)
+        pdf.cell(40, 8, "Parca Olcusu:", border=0)
+        pdf.cell(55, 8, f"{data_dict.get('olcu', '-')}", border=1)
+        pdf.cell(10, 8, "", border=0)
+        pdf.cell(40, 8, "Kesim Suresi:", border=0)
+        pdf.cell(45, 8, f"{data_dict.get('sure', '-')} dk", border=1, ln=True)
+        
+        pdf.ln(1)
+        pdf.cell(40, 8, "Kontur (Patlatma):", border=0)
+        pdf.cell(55, 8, f"{data_dict.get('kontur', '-')} ad", border=1)
+        pdf.cell(10, 8, "", border=0)
+        pdf.cell(40, 8, "Kesim Hizi:", border=0)
+        pdf.cell(45, 8, f"{data_dict.get('hiz', '-')} mm/dk", border=1, ln=True)
         pdf.ln(10)
         
-        # Malzeme Bilgileri
-        pdf.set_font("helvetica", "B", 12)
-        pdf.cell(0, 10, "Malzeme Bilgileri", ln=True)
-        pdf.set_font("helvetica", "", 10)
-        pdf.cell(95, 8, f"Metal Turu: {data_dict.get('metal', '-')}", border=1)
-        pdf.cell(95, 8, f"Kalinlik: {data_dict.get('kalinlik', '-')} mm", border=1, ln=True)
-        pdf.cell(95, 8, f"Adet: {data_dict.get('adet', '-')}", border=1)
-        pdf.cell(95, 8, f"Plaka Boyutu: {data_dict.get('plaka', '-')}", border=1, ln=True)
-        pdf.ln(5)
+        # --- 5. FİYATLANDIRMA (TEKLİF ÖZETİ) ---
+        pdf.set_draw_color(28, 55, 104) # Lacivert Çerçeve
+        pdf.set_line_width(0.5)
+        pdf.rect(10, pdf.get_y(), 190, 35) # Dış Çerçeve
         
-        # Analiz Sonuclari
-        pdf.set_font("helvetica", "B", 12)
-        pdf.cell(0, 10, "Analiz Detaylari", ln=True)
-        pdf.set_font("helvetica", "", 10)
-        pdf.cell(95, 8, f"Olcu: {data_dict.get('olcu', '-')}", border=1)
-        pdf.cell(95, 8, f"Kesim Suresi: {data_dict.get('sure', '-')} dk", border=1, ln=True)
-        pdf.cell(95, 8, f"Kontur Sayisi: {data_dict.get('kontur', '-')} ad", border=1)
-        pdf.cell(95, 8, f"Kesim Hizi: {data_dict.get('hiz', '-')} mm/dk", border=1, ln=True)
-        pdf.ln(5)
+        pdf.set_y(pdf.get_y() + 5)
+        pdf.set_font("helvetica", "B", 14)
+        pdf.cell(0, 10, "TEKLIF OZETI", ln=True, align="C")
         
-        # Fiyatlandirma
-        pdf.set_font("helvetica", "B", 12)
-        pdf.cell(0, 10, "Fiyatlandirma", ln=True)
-        pdf.set_font("helvetica", "B", 10)
-        pdf.cell(95, 10, f"TOPLAM (KDV HARIC):", border=1)
+        pdf.set_font("helvetica", "B", 11)
         pdf.set_text_color(28, 55, 104) # Lacivert
-        pdf.cell(95, 10, f"{data_dict.get('fiyat_haric', '-')} TL", border=1, ln=True, align="R")
+        pdf.cell(95, 10, f"TOPLAM (KDV HARIC):   {data_dict.get('fiyat_haric', '-')} TL", border=0, align="C")
         
         pdf.set_text_color(22, 101, 52) # Yesil
-        pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):", border=1)
-        pdf.cell(95, 10, f"{data_dict.get('fiyat_dahil', '-')} TL", border=1, ln=True, align="R")
+        pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):   {data_dict.get('fiyat_dahil', '-')} TL", border=0, ln=True, align="C")
         
-        pdf.ln(10)
-        pdf.set_text_color(0, 0, 0)
+        # --- FOOTER ---
+        pdf.set_y(-30)
+        pdf.set_text_color(100, 100, 100)
         pdf.set_font("helvetica", "I", 8)
-        pdf.cell(0, 10, "Bu belge sistem tarafindan otomatik olarak olusturulmustur.", align="C")
+        pdf.cell(0, 5, "Bu belge sistem tarafindan otomatik olarak olusturulmustur.", ln=True, align="C")
+        pdf.cell(0, 5, "Fiyatlar malzeme piyasa kosullarina gore degisiklik gosterebilir.", ln=True, align="C")
         
         return bytes(pdf.output())
     except Exception as e:
@@ -164,11 +200,10 @@ def sayfa_degistir(sayfa_adi):
 
 # --- 4. SABİT PARAMETRELER ---
 DK_UCRETI = materials.DK_UCRETI
-# DİNAMİK PIERCING: Artık sabit değişken kullanmıyoruz, materials.PIERCING_SURELERI'nden çekiyoruz.
 FIRE_ORANI = materials.FIRE_ORANI
 KDV_ORANI = materials.KDV_ORANI
 
-# --- 5. SIDEBAR (REVİZE EDİLDİ: TAŞMA ÖNLENDİ & DİNAMİK) ---
+# --- 5. SIDEBAR (REVİZE EDİLDİ) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -217,13 +252,9 @@ with st.sidebar:
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
 
     # --- 3. BİLGİ KUTUCUKLARI (HIZ & BİRİM) ---
-    # Konum: Plaka Boyutu ile KG Fiyatı arasında.
-    # Tasarım: Dikey hiyerarşi (yazı taşmasını önlemek için).
-    
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
-    # Fiyat değişkenini session_state ile yönetiyoruz
     if 'temp_kg_fiyat' not in st.session_state:
         st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 33.0))
 
@@ -258,7 +289,6 @@ with st.sidebar:
         format="%g",
         key="kg_input_field"
     )
-    # Değişikliği anında yukarıdaki yeşil kutuya yansıt
     st.session_state.temp_kg_fiyat = kg_fiyati
 
 # --- 6. ANA PANEL İÇERİĞİ ---
@@ -407,9 +437,20 @@ elif st.session_state.sayfa == 'foto_analiz':
                             </div>
                         </div>""", unsafe_allow_html=True)
                     
-                    pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{round(gercek_genislik,1)}x{round(gercek_yukseklik,1)}", "sure": round(sure_dk,2), "kontur": kontur_ad * adet, "hiz": guncel_hiz, "fiyat_haric": round(fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+                    # PDF İÇİN GÖRSEL KAYDETME
+                    pdf_bytes = None
+                    try:
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_img:
+                            cv2.imwrite(tmp_img.name, display_img)
+                            pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{round(gercek_genislik,1)}x{round(gercek_yukseklik,1)}", "sure": round(sure_dk,2), "kontur": kontur_ad * adet, "hiz": guncel_hiz, "fiyat_haric": round(fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+                            pdf_bytes = generate_pdf(pdf_data, image_path=tmp_img.name)
+                        os.unlink(tmp_img.name)
+                    except:
+                        pass
+                        
                     st.markdown('<div class="floating-pdf-container">📄 <b>Teklif Hazır</b>', unsafe_allow_html=True)
-                    st.download_button("PDF İndir", data=generate_pdf(pdf_data), file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
+                    if pdf_bytes:
+                        st.download_button("PDF İndir", data=pdf_bytes, file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
@@ -445,8 +486,7 @@ elif st.session_state.sayfa == 'dxf_analiz':
                 msp = doc.modelspace()
                 os.remove(tmp_path)
 
-                # 2. GÖRSELLEŞTİRME (Koyu Mod + Tam Geometri)
-                # Bounding Box Hesapla
+                # 2. GÖRSELLEŞTİRME
                 try:
                     bbox_cache = bbox.extents(msp)
                     w_real = bbox_cache.extmax.x - bbox_cache.extmin.x
@@ -455,33 +495,27 @@ elif st.session_state.sayfa == 'dxf_analiz':
                     w_real, h_real = 0, 0
                 
                 if w_real > 0 and h_real > 0:
-                    # Matplotlib Figürü (Koyu Arkaplan)
                     fig = plt.figure(figsize=(10, 10), facecolor='#111827')
                     ax = fig.add_axes([0, 0, 1, 1])
                     ax.set_facecolor('#111827')
                     
-                    # Çizim Context (Beyaz Çizgiler)
                     ctx = RenderContext(doc)
                     for layer in ctx.layers.values():
                         layer.color = '#FFFFFF' 
                     
-                    # Çizimi Yap
                     out = MatplotlibBackend(ax)
                     Frontend(ctx, out).draw_layout(msp, finalize=True)
                     
                     ax.set_aspect('equal', 'datalim')
                     ax.axis('off')
                     
-                    # Matplotlib Yeni Sürüm Uyumluluğu
                     fig.canvas.draw()
                     width, height = fig.canvas.get_width_height()
                     img_data = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).reshape(height, width, 4)
                     plt.close(fig)
                     
-                    # OpenCV Formatına (RGBA -> BGR) Dönüştür
                     dxf_img_bgr = cv2.cvtColor(img_data, cv2.COLOR_RGBA2BGR)
                     
-                    # 3. Kontur Analizi
                     gray = cv2.cvtColor(dxf_img_bgr, cv2.COLOR_BGR2GRAY)
                     _, binary = cv2.threshold(gray, hassasiyet_dxf, 255, cv2.THRESH_BINARY)
                     contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
@@ -492,19 +526,17 @@ elif st.session_state.sayfa == 'dxf_analiz':
                             if cv2.contourArea(cnt) < 5: continue 
                             valid_cnts.append(cnt)
                     
-                    # Sonuç Gösterimi
                     result_img = dxf_img_bgr.copy()
                     cv2.drawContours(result_img, valid_cnts, -1, (0, 255, 0), 2)
                     st.image(result_img, caption=f"DXF Görselleştirme: {uploaded_dxf.name}", use_container_width=True)
                     
-                    # 4. Hesaplamalar
                     if valid_cnts:
                         all_pts = np.concatenate(valid_cnts)
                         x_p, y_p, w_p, h_p = cv2.boundingRect(all_pts)
-                        scale_ratio = w_real / w_p # mm / pixel
+                        scale_ratio = w_real / w_p
                         
                         toplam_piksel_yol = sum([cv2.arcLength(c, True) for c in valid_cnts])
-                        kesim_m = (toplam_piksel_yol * scale_ratio) / 1000.0 # metre
+                        kesim_m = (toplam_piksel_yol * scale_ratio) / 1000.0 
                         piercing_basi = len(valid_cnts)
                         
                         # --- DİNAMİK PATLATMA SÜRESİ HESABI ---
@@ -535,9 +567,20 @@ elif st.session_state.sayfa == 'dxf_analiz':
                                 </div>
                             </div>""", unsafe_allow_html=True)
                         
-                        pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{round(w_real,1)}x{round(h_real,1)}", "sure": round(sure_dk,2), "kontur": piercing_basi * adet, "hiz": guncel_hiz, "fiyat_haric": round(toplam_fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+                        # PDF İÇİN GÖRSEL KAYDETME
+                        pdf_bytes = None
+                        try:
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_img:
+                                cv2.imwrite(tmp_img.name, result_img)
+                                pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{round(w_real,1)}x{round(h_real,1)}", "sure": round(sure_dk,2), "kontur": piercing_basi * adet, "hiz": guncel_hiz, "fiyat_haric": round(toplam_fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+                                pdf_bytes = generate_pdf(pdf_data, image_path=tmp_img.name)
+                            os.unlink(tmp_img.name)
+                        except:
+                            pass
+
                         st.markdown('<div class="floating-pdf-container">📄 <b>Teklif Hazır</b>', unsafe_allow_html=True)
-                        st.download_button("PDF İndir", data=generate_pdf(pdf_data), file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
+                        if pdf_bytes:
+                            st.download_button("PDF İndir", data=pdf_bytes, file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
                         st.markdown('</div>', unsafe_allow_html=True)
                     else:
                         st.warning("Görsel üzerinde kesim yolu algılanamadı.")
@@ -688,7 +731,20 @@ elif st.session_state.sayfa == 'hazir_parca':
                 </div>
             </div>""", unsafe_allow_html=True)
         
-        pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{genislik}x{yukseklik}", "sure": round(sure_dk,2), "kontur": piercing_sayisi * adet, "hiz": guncel_hiz, "fiyat_haric": round(toplam_fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+        # PDF İÇİN GÖRSEL KAYDETME
+        pdf_bytes = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_img:
+                # Canvas (RGB) formatında olduğu için BGR'a çevirip kaydediyoruz (cv2.imwrite BGR bekler)
+                canvas_bgr = cv2.cvtColor(canvas_rgb, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(tmp_img.name, canvas_bgr)
+                pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{genislik}x{yukseklik}", "sure": round(sure_dk,2), "kontur": piercing_sayisi * adet, "hiz": guncel_hiz, "fiyat_haric": round(toplam_fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+                pdf_bytes = generate_pdf(pdf_data, image_path=tmp_img.name)
+            os.unlink(tmp_img.name)
+        except:
+            pass
+
         st.markdown('<div class="floating-pdf-container">📄 <b>Teklif Hazır</b>', unsafe_allow_html=True)
-        st.download_button("PDF İndir", data=generate_pdf(pdf_data), file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
+        if pdf_bytes:
+            st.download_button("PDF İndir", data=pdf_bytes, file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
