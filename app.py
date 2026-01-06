@@ -113,6 +113,18 @@ st.markdown("""
             font-weight: bold;
             color: #111;
         }
+        
+        .floating-pdf-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+            border-top: 4px solid #1C3768;
+        }
 
         /* Metric Styling */
         div[data-testid="metric-container"] {
@@ -475,6 +487,18 @@ elif st.session_state.sayfa == 'dxf_analiz':
                         kdvli_fiyat = toplam_fiyat * KDV_ORANI
                         
                         st.success(f"✅ Analiz Başarılı: {uploaded_dxf.name}")
+                        pdf_data = {
+                            "metal": metal, "kalinlik": kalinlik, "adet": adet,
+                            "plaka": secilen_plaka_adi, "olcu": f"{round(gercek_genislik,1)}x{round(gercek_yukseklik,1)} mm",
+                            "sure": round(sure_dk, 2), "kontur": kontur_ad * adet,
+                            "hiz": guncel_hiz, "fiyat_haric": round(fiyat, 2), "fiyat_dahil": round(kdvli_fiyat, 2)
+                        }
+                    
+                        st.markdown('<div class="floating-pdf-container">', unsafe_allow_html=True)
+                        st.write("📄 **Teklif Hazır**")
+                        pdf_bytes = generate_pdf(pdf_data)
+                        st.download_button(label="Teklifi PDF İndir", data=pdf_bytes, file_name=f"Teklif_{metal}.pdf", mime="application/pdf", use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
                         st.markdown("### 📋 Teklif Özeti")
                         
                         cd_d, cf_d = st.columns([1, 1])
