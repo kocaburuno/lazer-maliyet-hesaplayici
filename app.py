@@ -224,6 +224,36 @@ with st.sidebar:
         key="kg_input_field"
     )
     st.session_state.temp_kg_fiyat = kg_fiyati
+    # --- 6. ANA PANEL İÇERİĞİ ---
+st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
+
+# === DURUM A: ANASAYFA ===
+if st.session_state.sayfa == 'anasayfa':
+    st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
+    st.markdown("---")
+    
+    c1, c2, c3 = st.columns(3, gap="medium")
+    
+    with c1:
+        st.info("📸 **FOTOĞRAFTAN ANALİZ**")
+        st.markdown("JPG, PNG formatı desteği ve referans ölçü ile ölçekleme.")
+        if st.button("FOTOĞRAF YÜKLE", use_container_width=True, type="primary"):
+            sayfa_degistir('foto_analiz')
+            st.rerun()
+
+    with c2:
+        st.warning("📐 **TEKNİK ÇİZİM ANALİZİ (DXF)**")
+        st.markdown("Vektörel çizim dosyanızı doğrudan yükleyerek hassas sonuç alın.")
+        if st.button("ÇİZİM DOSYASI YÜKLE", use_container_width=True, type="primary"):
+            sayfa_degistir('dxf_analiz')
+            st.rerun()
+
+    with c3:
+        st.success("🛠 **HAZIR PARÇA OLUŞTUR**")
+        st.markdown("Standart geometrik şekilleri manuel olarak oluşturun.")
+        if st.button("MANUEL PARÇA OLUŞTUR", use_container_width=True, type="primary"):
+            sayfa_degistir('hazir_parca')
+            st.rerun()
 
 # === DURUM B: FOTOĞRAFTAN ANALİZ SAYFASI ===
 elif st.session_state.sayfa == 'foto_analiz':
