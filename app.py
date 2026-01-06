@@ -152,6 +152,7 @@ FIRE_ORANI = materials.FIRE_ORANI
 KDV_ORANI = materials.KDV_ORANI
 
 # --- 5. SIDEBAR (GÖRSELDEKİ TASARIMA GÖRE REVİZE EDİLDİ) ---
+# --- 5. SIDEBAR (REVİZE EDİLDİ: YERLEŞİM VE TASARIM) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -170,19 +171,18 @@ with st.sidebar:
         unsafe_allow_html=True
     )
         
-    st.markdown("---") # Sadece Logodan sonraki ilk çizgi kalıyor
+    st.markdown("---")
     
-    # 1. Metal Türü
+    # 1. Metal, Kalınlık ve Adet Seçimi
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
     
-    # 2. Kalınlık ve Adet (Yan Yana)
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
 
-    # 3. Plaka Boyutu
+    # 2. Plaka Seçenekleri Mantığı
     if metal == "DKP / HRP(Siyah Sac)":
         if 0.8 <= kalinlik <= 1.5:
             plaka_secenekleri = {"100x200cm": (1000, 2000), "125x250cm": (1250, 2500), "150x300cm": (1500, 3000)}
@@ -192,31 +192,51 @@ with st.sidebar:
         plaka_secenekleri = {"100x200cm": (1000, 2000), "150x300cm": (1500, 3000), "150x600cm": (1500, 6000)}
 
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
+
+    # --- 3. BİLGİ KUTUCUKLARI (YERİ DEĞİŞTİRİLDİ VE TASARIMI GÜNCELLENDİ) ---
+    # Plaka boyutu ile Fiyat girişi arasına alındı.
+    # Taşmayı önlemek için başlık ve değer alt alta (dikey) hizalandı.
     
-    # GÖRSELDEKİ TALEP: Buradaki çizgi kaldırıldı (X)
+    hiz_tablosu = materials.VERİ[metal]["hizlar"]
+    guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
-    # 4. Malzeme KG Fiyatı
-    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 30.0)
+    # Fiyat değişkenini session_state ile yönetiyoruz ki kutucuk anlık güncellensin
+    if 'temp_kg_fiyat' not in st.session_state:
+        st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 33.0))
+
+    st.markdown("<br>", unsafe_allow_html=True) # Küçük bir boşluk
+
+    col_i1, col_i2 = st.columns(2)
+    with col_i1:
+        # Mavi Kutu: Hız
+        st.markdown(f"""
+            <div style="background-color: #e7f3fe; padding: 10px; border-radius: 8px; border-left: 4px solid #2196F3; color: #0c5460; min-height: 70px;">
+                <div style="font-size: 11px; font-weight: 600; opacity: 0.8; margin-bottom: 2px;">Hız(mm/dk)</div>
+                <div style="font-size: 17px; font-weight: bold;">{guncel_hiz}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    with col_i2:
+        # Yeşil Kutu: Birim Fiyat
+        st.markdown(f"""
+            <div style="background-color: #d4edda; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; color: #155724; min-height: 70px;">
+                <div style="font-size: 11px; font-weight: 600; opacity: 0.8; margin-bottom: 2px;">Birim(TL/kg)</div>
+                <div style="font-size: 17px; font-weight: bold;">{st.session_state.temp_kg_fiyat} TL</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
+
+    # --- 4. MALZEME KG FİYATI GİRİŞİ (KUTUCUKLARDAN SONRA) ---
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
-        value=float(varsayilan_fiyat), 
+        value=st.session_state.temp_kg_fiyat, 
         step=1.0, 
-        format="%g"
+        format="%g",
+        key="kg_input_field"
     )
-
-    # GÖRSELDEKİ TALEP: Buradaki çizgi kaldırıldı (X)
-    
-    # 5. Hız ve Birim Bilgi Kutuları (En Alt Bölüm)
-    hiz_tablosu = materials.VERİ[metal]["hizlar"]
-    guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
-
-    st.markdown("<br>", unsafe_allow_html=True) # Hafif bir boşluk için
-    col_i1, col_i2 = st.columns(2)
-    with col_i1:
-        st.info(f"Hız {guncel_hiz}")
-    with col_i2:
-        st.success(f"Birim {kg_fiyati} TL")
+    # Değişikliği anında yukarıdaki yeşil kutuya yansıt
+    st.session_state.temp_kg_fiyat = kg_fiyati
 
 # --- 6. ANA PANEL İÇERİĞİ ---
 st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
