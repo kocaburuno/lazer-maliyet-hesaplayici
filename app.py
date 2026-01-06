@@ -190,31 +190,31 @@ with st.sidebar:
 
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
 
-    # --- YENİ KONUM: HIZ VE BİRİM KUTUCUKLARI ---
+    # --- HIZ VE BİRİM KUTUCUKLARI (YENİ DİKEY TASARIM) ---
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
-    # Session state ile fiyatı widget'tan önce tanımlıyoruz ki kutucukta görünebilsin
     if 'temp_kg_fiyat' not in st.session_state:
         st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 33.0))
 
     col_i1, col_i2 = st.columns(2)
     with col_i1:
         st.markdown(f"""
-            <div style="background-color: #e7f3fe; padding: 8px; border-radius: 5px; border-left: 4px solid #2196F3; font-size: 12px; color: #0c5460; white-space: nowrap;">
-                Hız(mm/dk) <b>{guncel_hiz}</b>
+            <div style="background-color: #e7f3fe; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3; color: #0c5460; min-height: 60px;">
+                <div style="font-size: 10px; margin-bottom: 2px; opacity: 0.8;">Hız(mm/dk)</div>
+                <div style="font-size: 16px; font-weight: bold;">{guncel_hiz}</div>
             </div>
         """, unsafe_allow_html=True)
     with col_i2:
         st.markdown(f"""
-            <div style="background-color: #d4edda; padding: 8px; border-radius: 5px; border-left: 4px solid #28a745; font-size: 12px; color: #155724; white-space: nowrap;">
-                Birim(TL/kg) <b>{st.session_state.temp_kg_fiyat} TL</b>
+            <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; border-left: 4px solid #28a745; color: #155724; min-height: 60px;">
+                <div style="font-size: 10px; margin-bottom: 2px; opacity: 0.8;">Birim(TL/kg)</div>
+                <div style="font-size: 16px; font-weight: bold;">{st.session_state.temp_kg_fiyat} TL</div>
             </div>
         """, unsafe_allow_html=True)
 
     st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
 
-    # --- MALZEME KG FİYATI GİRİŞİ ---
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
@@ -223,57 +223,7 @@ with st.sidebar:
         format="%g",
         key="kg_input_field"
     )
-    # Değeri güncelle
     st.session_state.temp_kg_fiyat = kg_fiyati
-
-# --- 6. ANA PANEL İÇERİĞİ ---
-st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
-
-# === DURUM A: ANASAYFA ===
-if st.session_state.sayfa == 'anasayfa':
-    st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
-    st.markdown("---")
-    
-    c1, c2, c3 = st.columns(3, gap="medium")
-    
-    with c1:
-        st.info("📸 **FOTOĞRAFTAN ANALİZ**")
-        st.markdown("""
-        Fotoğraf veya eskiz görsellerini yükleyin. **AI görüntü işleme algoritmamız** işini yapsın.
-        
-        **Özellikler:**
-        * **JPG, PNG formatı**
-        * Referans Ölçü ile Ölçekleme
-        """)
-        if st.button("FOTOĞRAF YÜKLE", use_container_width=True, type="primary"):
-            sayfa_degistir('foto_analiz')
-            st.rerun()
-
-    with c2:
-        st.warning("📐 **TEKNİK ÇİZİM ANALİZİ (DXF)**")
-        st.markdown("""
-        Vektörel çizim dosyanızı doğrudan yükleyerek %100 hassas sonuç alın.
-        
-        **Özellikler:**
-        * **Yalnızca DXF Desteği**
-        * Otomatik Yerleşim (Nesting)
-        """)
-        if st.button("ÇİZİM DOSYASI YÜKLE", use_container_width=True, type="primary"):
-            sayfa_degistir('dxf_analiz')
-            st.rerun()
-
-    with c3:
-        st.success("🛠 **HAZIR PARÇA OLUŞTUR**")
-        st.markdown("""
-        Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) manuel oluşturun.
-        
-        **Özellikler:**
-        * **Kare, Dikdörtgen, Daire**
-        * Delik Tanımlama
-        """)
-        if st.button("MANUEL PARÇA OLUŞTUR", use_container_width=True, type="primary"):
-            sayfa_degistir('hazir_parca')
-            st.rerun()
 
 # === DURUM B: FOTOĞRAFTAN ANALİZ SAYFASI ===
 elif st.session_state.sayfa == 'foto_analiz':
