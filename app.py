@@ -12,56 +12,60 @@ import materials  # materials.py dosyasını dahil ediyoruz
 
 from fpdf import FPDF
 
+# --- PDF OLUŞTURMA FONKSİYONU ---
 def generate_pdf(data_dict):
-    pdf = FPDF()
-    pdf.add_page()
-    
-    # Başlık ve Logo Alanı
-    pdf.set_font("helvetica", "B", 16)
-    pdf.cell(0, 10, "ALAN LAZER TEKLIF FORMU", ln=True, align="C")
-    pdf.set_font("helvetica", "", 10)
-    pdf.cell(0, 10, "www.alanlazer.com", ln=True, align="C")
-    pdf.line(10, 30, 200, 30)
-    pdf.ln(10)
-    
-    # Malzeme Bilgileri
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 10, "Malzeme Bilgileri", ln=True)
-    pdf.set_font("helvetica", "", 10)
-    pdf.cell(95, 8, f"Metal Turu: {data_dict['metal']}", border=1)
-    pdf.cell(95, 8, f"Kalinlik: {data_dict['kalinlik']} mm", border=1, ln=True)
-    pdf.cell(95, 8, f"Adet: {data_dict['adet']}", border=1)
-    pdf.cell(95, 8, f"Plaka Boyutu: {data_dict['plaka']}", border=1, ln=True)
-    pdf.ln(5)
-    
-    # Analiz Sonuclari
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 10, "Analiz Detaylari", ln=True)
-    pdf.set_font("helvetica", "", 10)
-    pdf.cell(95, 8, f"Olcu: {data_dict['olcu']}", border=1)
-    pdf.cell(95, 8, f"Kesim Suresi: {data_dict['sure']} dk", border=1, ln=True)
-    pdf.cell(95, 8, f"Kontur Sayisi: {data_dict['kontur']} ad", border=1)
-    pdf.cell(95, 8, f"Kesim Hizi: {data_dict['hiz']} mm/dk", border=1, ln=True)
-    pdf.ln(5)
-    
-    # Fiyatlandirma
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 10, "Fiyatlandirma", ln=True)
-    pdf.set_font("helvetica", "B", 10)
-    pdf.cell(95, 10, f"TOPLAM (KDV HARIC):", border=1)
-    pdf.set_text_color(28, 55, 104) # Lacivert
-    pdf.cell(95, 10, f"{data_dict['fiyat_haric']} TL", border=1, ln=True, align="R")
-    
-    pdf.set_text_color(22, 101, 52) # Yesil
-    pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):", border=1)
-    pdf.cell(95, 10, f"{data_dict['fiyat_dahil']} TL", border=1, ln=True, align="R")
-    
-    pdf.ln(10)
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("helvetica", "I", 8)
-    pdf.cell(0, 10, "Bu belge sistem tarafindan otomatik olarak olusturulmustur.", align="C")
-    
-    return pdf.output()
+    try:
+        pdf = FPDF()
+        pdf.add_page()
+        
+        # Başlık ve Logo Alanı
+        pdf.set_font("helvetica", "B", 16)
+        pdf.cell(0, 10, "ALAN LAZER TEKLIF FORMU", ln=True, align="C")
+        pdf.set_font("helvetica", "", 10)
+        pdf.cell(0, 10, "www.alanlazer.com", ln=True, align="C")
+        pdf.line(10, 30, 200, 30)
+        pdf.ln(10)
+        
+        # Malzeme Bilgileri
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 10, "Malzeme Bilgileri", ln=True)
+        pdf.set_font("helvetica", "", 10)
+        pdf.cell(95, 8, f"Metal Turu: {data_dict.get('metal', '-')}", border=1)
+        pdf.cell(95, 8, f"Kalinlik: {data_dict.get('kalinlik', '-')} mm", border=1, ln=True)
+        pdf.cell(95, 8, f"Adet: {data_dict.get('adet', '-')}", border=1)
+        pdf.cell(95, 8, f"Plaka Boyutu: {data_dict.get('plaka', '-')}", border=1, ln=True)
+        pdf.ln(5)
+        
+        # Analiz Sonuclari
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 10, "Analiz Detaylari", ln=True)
+        pdf.set_font("helvetica", "", 10)
+        pdf.cell(95, 8, f"Olcu: {data_dict.get('olcu', '-')}", border=1)
+        pdf.cell(95, 8, f"Kesim Suresi: {data_dict.get('sure', '-')} dk", border=1, ln=True)
+        pdf.cell(95, 8, f"Kontur Sayisi: {data_dict.get('kontur', '-')} ad", border=1)
+        pdf.cell(95, 8, f"Kesim Hizi: {data_dict.get('hiz', '-')} mm/dk", border=1, ln=True)
+        pdf.ln(5)
+        
+        # Fiyatlandirma
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 10, "Fiyatlandirma", ln=True)
+        pdf.set_font("helvetica", "B", 10)
+        pdf.cell(95, 10, f"TOPLAM (KDV HARIC):", border=1)
+        pdf.set_text_color(28, 55, 104) # Lacivert
+        pdf.cell(95, 10, f"{data_dict.get('fiyat_haric', '-')} TL", border=1, ln=True, align="R")
+        
+        pdf.set_text_color(22, 101, 52) # Yesil
+        pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):", border=1)
+        pdf.cell(95, 10, f"{data_dict.get('fiyat_dahil', '-')} TL", border=1, ln=True, align="R")
+        
+        pdf.ln(10)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("helvetica", "I", 8)
+        pdf.cell(0, 10, "Bu belge sistem tarafindan otomatik olarak olusturulmustur.", align="C")
+        
+        return bytes(pdf.output())
+    except Exception as e:
+        return str(e).encode()
     
 # --- KÜTÜPHANE KONTROLÜ (Hata Yönetimi) ---
 try:
@@ -114,6 +118,19 @@ st.markdown("""
             color: #111;
         }
 
+        .floating-pdf-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+            border-top: 4px solid #1C3768;
+            width: 250px;
+        }
+
         /* Metric Styling */
         div[data-testid="metric-container"] {
             background-color: #f8f9fb;
@@ -145,13 +162,13 @@ if 'sayfa' not in st.session_state:
 def sayfa_degistir(sayfa_adi):
     st.session_state.sayfa = sayfa_adi
 
-# --- 4. SABİT PARAMETRELER (Artık materials.py'den geliyor) ---
+# --- 4. SABİT PARAMETRELER ---
 DK_UCRETI = materials.DK_UCRETI
-# PIERCING_SURESI satırını buradan sildik çünkü dinamik çekeceğiz.
+# DİNAMİK PIERCING: Artık sabit değişken kullanmıyoruz, materials.PIERCING_SURELERI'nden çekiyoruz.
 FIRE_ORANI = materials.FIRE_ORANI
 KDV_ORANI = materials.KDV_ORANI
 
-# --- 5. SIDEBAR (REVİZE EDİLDİ: YERLEŞİM VE TASARIM) ---
+# --- 5. SIDEBAR (REVİZE EDİLDİ: TAŞMA ÖNLENDİ & DİNAMİK) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -181,11 +198,12 @@ with st.sidebar:
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
 
-    # 2. Plaka Seçenekleri Mantığı (Tüm Malzemeler İçin Ortak)
+    # 2. Plaka Seçenekleri Mantığı (Tüm Malzemeler İçin Ortak 0.8-1.5mm Kuralı)
     if 0.8 <= kalinlik <= 1.5:
         # İnce Malzemeler: 125x250 seçeneği var, 6 metre yok
         plaka_secenekleri = {
             "100x200 cm": (1000, 2000),  
+            "125x250 cm": (1250, 2500), 
             "150x300 cm": (1500, 3000)
         }
     else:
@@ -198,14 +216,14 @@ with st.sidebar:
 
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
 
-    # --- 3. BİLGİ KUTUCUKLARI (YERİ DEĞİŞTİRİLDİ VE TASARIMI GÜNCELLENDİ) ---
-    # Plaka boyutu ile Fiyat girişi arasına alındı.
-    # Taşmayı önlemek için başlık ve değer alt alta (dikey) hizalandı.
+    # --- 3. BİLGİ KUTUCUKLARI (HIZ & BİRİM) ---
+    # Konum: Plaka Boyutu ile KG Fiyatı arasında.
+    # Tasarım: Dikey hiyerarşi (yazı taşmasını önlemek için).
     
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
-    # Fiyat değişkenini session_state ile yönetiyoruz ki kutucuk anlık güncellensin
+    # Fiyat değişkenini session_state ile yönetiyoruz
     if 'temp_kg_fiyat' not in st.session_state:
         st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 33.0))
 
@@ -231,7 +249,7 @@ with st.sidebar:
 
     st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
 
-    # --- 4. MALZEME KG FİYATI GİRİŞİ (KUTUCUKLARDAN SONRA) ---
+    # --- 4. MALZEME KG FİYATI GİRİŞİ ---
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
@@ -253,8 +271,7 @@ if st.session_state.sayfa == 'anasayfa':
     
     c1, c2, c3 = st.columns(3, gap="medium")
     
-    # Kutucukların içeriği ne kadar kısa veya uzun olursa olsun
-    # metin alanı en az 220px yer kaplayacak. Böylece butonlar hep aynı hizada başlar.
+    # Butonların hizalı kalması için sabit yükseklikli kutu stili
     box_style = "min-height: 220px; display: flex; flex-direction: column;"
     
     with c1:
@@ -364,7 +381,11 @@ elif st.session_state.sayfa == 'foto_analiz':
 
                     kesim_m = (sum([cv2.arcLength(c, True) for c in valid_contour_list]) * oran) / 1000
                     kontur_ad = len(valid_contour_list)
-                    sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * PIERCING_SURESI / 60)
+                    
+                    # --- DİNAMİK PATLATMA SÜRESİ HESABI ---
+                    p_suresi = materials.PIERCING_SURELERI.get(kalinlik, 1.0)
+                    sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * p_suresi / 60)
+                    
                     agirlik = (cv2.contourArea(all_pts) * (oran**2) * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
                     fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
                     kdvli_fiyat = fiyat * KDV_ORANI
@@ -386,6 +407,10 @@ elif st.session_state.sayfa == 'foto_analiz':
                             </div>
                         </div>""", unsafe_allow_html=True)
                     
+                    pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{round(gercek_genislik,1)}x{round(gercek_yukseklik,1)}", "sure": round(sure_dk,2), "kontur": kontur_ad * adet, "hiz": guncel_hiz, "fiyat_haric": round(fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+                    st.markdown('<div class="floating-pdf-container">📄 <b>Teklif Hazır</b>', unsafe_allow_html=True)
+                    st.download_button("PDF İndir", data=generate_pdf(pdf_data), file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
 
@@ -482,7 +507,10 @@ elif st.session_state.sayfa == 'dxf_analiz':
                         kesim_m = (toplam_piksel_yol * scale_ratio) / 1000.0 # metre
                         piercing_basi = len(valid_cnts)
                         
-                        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * PIERCING_SURESI / 60)
+                        # --- DİNAMİK PATLATMA SÜRESİ HESABI ---
+                        p_suresi = materials.PIERCING_SURELERI.get(kalinlik, 1.0)
+                        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_basi * adet * p_suresi / 60)
+                        
                         agirlik = (w_real * h_real * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
                         
                         toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
@@ -506,6 +534,11 @@ elif st.session_state.sayfa == 'dxf_analiz':
                                     KDV DAHİL: {round(kdvli_fiyat, 2)} TL
                                 </div>
                             </div>""", unsafe_allow_html=True)
+                        
+                        pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{round(w_real,1)}x{round(h_real,1)}", "sure": round(sure_dk,2), "kontur": piercing_basi * adet, "hiz": guncel_hiz, "fiyat_haric": round(toplam_fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+                        st.markdown('<div class="floating-pdf-container">📄 <b>Teklif Hazır</b>', unsafe_allow_html=True)
+                        st.download_button("PDF İndir", data=generate_pdf(pdf_data), file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
                     else:
                         st.warning("Görsel üzerinde kesim yolu algılanamadı.")
                 else:
@@ -629,8 +662,11 @@ elif st.session_state.sayfa == 'hazir_parca':
     with c_sonuc:
         st.image(canvas_rgb, caption=f"Önizleme: {genislik}x{yukseklik}mm", use_container_width=True)
         
+        # --- DİNAMİK PATLATMA SÜRESİ HESABI ---
+        p_suresi = materials.PIERCING_SURELERI.get(kalinlik, 1.0)
+        
         kesim_m = toplam_kesim_mm / 1000
-        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * PIERCING_SURESI / 60)
+        sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (piercing_sayisi * adet * p_suresi / 60)
         agirlik = (net_alan_mm2 * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
         toplam_fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyati)
         kdvli_fiyat = toplam_fiyat * KDV_ORANI
@@ -651,3 +687,8 @@ elif st.session_state.sayfa == 'hazir_parca':
                     KDV DAHİL: {round(kdvli_fiyat, 2)} TL
                 </div>
             </div>""", unsafe_allow_html=True)
+        
+        pdf_data = {"metal": metal, "kalinlik": kalinlik, "adet": adet, "plaka": secilen_plaka_adi, "olcu": f"{genislik}x{yukseklik}", "sure": round(sure_dk,2), "kontur": piercing_sayisi * adet, "hiz": guncel_hiz, "fiyat_haric": round(toplam_fiyat,2), "fiyat_dahil": round(kdvli_fiyat,2)}
+        st.markdown('<div class="floating-pdf-container">📄 <b>Teklif Hazır</b>', unsafe_allow_html=True)
+        st.download_button("PDF İndir", data=generate_pdf(pdf_data), file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
