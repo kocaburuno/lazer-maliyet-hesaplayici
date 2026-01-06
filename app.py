@@ -185,15 +185,15 @@ with st.sidebar:
     if 0.8 <= kalinlik <= 1.5:
         # İnce Malzemeler: 125x250 seçeneği var, 6 metre yok
         plaka_secenekleri = {
-            "100x200cm": (1000, 2000),  
-            "150x300cm": (1500, 3000)
+            "100x200 cm": (1000, 2000),  
+            "150x300 cm": (1500, 3000)
         }
     else:
         # Kalın Malzemeler (2mm+): 125x250 kalkar, 6 metre gelir
         plaka_secenekleri = {
-            "100x200cm": (1000, 2000), 
-            "150x300cm": (1500, 3000), 
-            "150x600cm": (1500, 6000)
+            "100x200 cm": (1000, 2000), 
+            "150x300 cm": (1500, 3000), 
+            "150x600 cm": (1500, 6000)
         }
 
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
