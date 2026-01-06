@@ -241,9 +241,9 @@ with st.sidebar:
     
     col_i1, col_i2 = st.columns(2)
     with col_i1:
-        st.info(f"Hız(mm/dk)\n{guncel_hiz}")
+        st.info(f"Hız\n{guncel_hiz}")
     with col_i2:
-        st.success(f"Birim(TL/kg)\n{kg_fiyati} TL")
+        st.success(f"Birim\n{kg_fiyati} TL")
 
 # --- 6. ANA PANEL İÇERİĞİ ---
 st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
