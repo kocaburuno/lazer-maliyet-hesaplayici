@@ -151,12 +151,12 @@ PIERCING_SURESI = materials.PIERCING_SURESI
 FIRE_ORANI = materials.FIRE_ORANI
 KDV_ORANI = materials.KDV_ORANI
 
-# --- 5. SIDEBAR ---
+# --- 5. SIDEBAR (GÖRSELDEKİ TASARIMA GÖRE REVİZE EDİLDİ) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
     except:
-        st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>ALAN LAZER</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: #1C3768;'>ALAN LAZER</h1>", unsafe_allow_html=True)
     
     st.markdown(
         """
@@ -170,65 +170,33 @@ with st.sidebar:
         unsafe_allow_html=True
     )
         
-    st.markdown("---")
+    st.markdown("---") # Sadece Logodan sonraki ilk çizgi kalıyor
     
-    # Metal Türü Seçimi (Artık yeni isimle gelecek)
+    # 1. Metal Türü
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
     
-    # Kalınlık ve Adet Seçimi
+    # 2. Kalınlık ve Adet (Yan Yana)
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
 
-    # --- KRİTİK DEĞİŞİKLİK BURADA YAPILDI ---
-    # Eski: if metal == "Siyah Sac":
-    # Yeni: if metal == "DKP / HRP(Siyah Sac)":
-    
+    # 3. Plaka Boyutu
     if metal == "DKP / HRP(Siyah Sac)":
         if 0.8 <= kalinlik <= 1.5:
-            # İnce Saclar (DKP Genellikle)
-            plaka_secenekleri = {
-                "100x200cm": (1000, 2000), 
-                "125x250cm": (1250, 2500), 
-                "150x300cm": (1500, 3000)
-            }
-        elif kalinlik >= 2.0:
-            # Kalın Saclar (HRP Genellikle)
-            plaka_secenekleri = {
-                "100x200cm": (1000, 2000), 
-                "150x300cm": (1500, 3000), 
-                "150x600cm": (1500, 6000)
-            }
+            plaka_secenekleri = {"100x200cm": (1000, 2000), "125x250cm": (1250, 2500), "150x300cm": (1500, 3000)}
         else:
-            plaka_secenekleri = {"150x300cm": (1500, 3000)}
-            
+            plaka_secenekleri = {"100x200cm": (1000, 2000), "150x300cm": (1500, 3000), "150x600cm": (1500, 6000)}
     else:
-        # Paslanmaz ve Alüminyum
-        plaka_secenekleri = {
-            "100x200cm": (1000, 2000), 
-            "150x300cm": (1500, 3000),
-            "150x600cm": (1500, 6000)
-        }
+        plaka_secenekleri = {"100x200cm": (1000, 2000), "150x300cm": (1500, 3000), "150x600cm": (1500, 6000)}
 
-    # Filtrelenmiş Plaka Listesini Göster
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
-    secilen_p_en, secilen_p_boy = plaka_secenekleri[secilen_plaka_adi]
-
-    # --- Hız ve Fiyat Hesaplamaları ---
-    hiz_tablosu = materials.VERİ[metal]["hizlar"]
-    tanimli_k = sorted(hiz_tablosu.keys())
-    uygun_k = tanimli_k[0]
-    for k in tanimli_k:
-        if kalinlik >= k: uygun_k = k
-    guncel_hiz = hiz_tablosu[uygun_k]
-
-    # Varsayılan fiyatı yeni anahtarla çekecek
-    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 29.0)
     
-    st.markdown("---")
+    # GÖRSELDEKİ TALEP: Buradaki çizgi kaldırıldı (X)
     
+    # 4. Malzeme KG Fiyatı
+    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 30.0)
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
@@ -237,13 +205,18 @@ with st.sidebar:
         format="%g"
     )
 
-    st.markdown("---")
+    # GÖRSELDEKİ TALEP: Buradaki çizgi kaldırıldı (X)
     
+    # 5. Hız ve Birim Bilgi Kutuları (En Alt Bölüm)
+    hiz_tablosu = materials.VERİ[metal]["hizlar"]
+    guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
+
+    st.markdown("<br>", unsafe_allow_html=True) # Hafif bir boşluk için
     col_i1, col_i2 = st.columns(2)
     with col_i1:
-        st.info(f"Hız\n{guncel_hiz}")
+        st.info(f"Hız {guncel_hiz}")
     with col_i2:
-        st.success(f"Birim\n{kg_fiyati} TL")
+        st.success(f"Birim {kg_fiyati} TL")
 
 # --- 6. ANA PANEL İÇERİĞİ ---
 st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
