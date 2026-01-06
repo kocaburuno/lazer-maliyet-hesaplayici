@@ -151,7 +151,7 @@ PIERCING_SURESI = materials.PIERCING_SURESI
 FIRE_ORANI = materials.FIRE_ORANI
 KDV_ORANI = materials.KDV_ORANI
 
-# --- 5. SIDEBAR (REVİZE EDİLDİ) ---
+# --- 5. SIDEBAR (GÖRSELDEKİ TASARIMA GÖRE REVİZE EDİLDİ) ---
 with st.sidebar:
     try:
         st.image("logo.png", use_column_width=True)
@@ -170,16 +170,19 @@ with st.sidebar:
         unsafe_allow_html=True
     )
         
-    st.markdown("---")
+    st.markdown("---") # Sadece Logodan sonraki ilk çizgi kalıyor
     
+    # 1. Metal Türü
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
     
+    # 2. Kalınlık ve Adet (Yan Yana)
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
 
+    # 3. Plaka Boyutu
     if metal == "DKP / HRP(Siyah Sac)":
         if 0.8 <= kalinlik <= 1.5:
             plaka_secenekleri = {"100x200cm": (1000, 2000), "125x250cm": (1250, 2500), "150x300cm": (1500, 3000)}
@@ -189,42 +192,33 @@ with st.sidebar:
         plaka_secenekleri = {"100x200cm": (1000, 2000), "150x300cm": (1500, 3000), "150x600cm": (1500, 6000)}
 
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
-
-    # --- HIZ VE BİRİM KUTUCUKLARI (YENİ DİKEY TASARIM) ---
-    hiz_tablosu = materials.VERİ[metal]["hizlar"]
-    guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
-    if 'temp_kg_fiyat' not in st.session_state:
-        st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 33.0))
-
-    col_i1, col_i2 = st.columns(2)
-    with col_i1:
-        st.markdown(f"""
-            <div style="background-color: #e7f3fe; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3; color: #0c5460; min-height: 60px;">
-                <div style="font-size: 10px; margin-bottom: 2px; opacity: 0.8;">Hız(mm/dk)</div>
-                <div style="font-size: 16px; font-weight: bold;">{guncel_hiz}</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with col_i2:
-        st.markdown(f"""
-            <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; border-left: 4px solid #28a745; color: #155724; min-height: 60px;">
-                <div style="font-size: 10px; margin-bottom: 2px; opacity: 0.8;">Birim(TL/kg)</div>
-                <div style="font-size: 16px; font-weight: bold;">{st.session_state.temp_kg_fiyat} TL</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
-
+    # GÖRSELDEKİ TALEP: Buradaki çizgi kaldırıldı (X)
+    
+    # 4. Malzeme KG Fiyatı
+    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 30.0)
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
         min_value=0.0, 
-        value=st.session_state.temp_kg_fiyat, 
+        value=float(varsayilan_fiyat), 
         step=1.0, 
-        format="%g",
-        key="kg_input_field"
+        format="%g"
     )
-    st.session_state.temp_kg_fiyat = kg_fiyati
-    # --- 6. ANA PANEL İÇERİĞİ ---
+
+    # GÖRSELDEKİ TALEP: Buradaki çizgi kaldırıldı (X)
+    
+    # 5. Hız ve Birim Bilgi Kutuları (En Alt Bölüm)
+    hiz_tablosu = materials.VERİ[metal]["hizlar"]
+    guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
+
+    st.markdown("<br>", unsafe_allow_html=True) # Hafif bir boşluk için
+    col_i1, col_i2 = st.columns(2)
+    with col_i1:
+        st.info(f"Hız {guncel_hiz}")
+    with col_i2:
+        st.success(f"Birim {kg_fiyati} TL")
+
+# --- 6. ANA PANEL İÇERİĞİ ---
 st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
 
 # === DURUM A: ANASAYFA ===
@@ -236,21 +230,39 @@ if st.session_state.sayfa == 'anasayfa':
     
     with c1:
         st.info("📸 **FOTOĞRAFTAN ANALİZ**")
-        st.markdown("JPG, PNG formatı desteği ve referans ölçü ile ölçekleme.")
+        st.markdown("""
+        Fotoğraf veya eskiz görsellerini yükleyin. **AI görüntü işleme algoritmamız** işini yapsın.
+        
+        **Özellikler:**
+        * **JPG, PNG formatı**
+        * Referans Ölçü ile Ölçekleme
+        """)
         if st.button("FOTOĞRAF YÜKLE", use_container_width=True, type="primary"):
             sayfa_degistir('foto_analiz')
             st.rerun()
 
     with c2:
         st.warning("📐 **TEKNİK ÇİZİM ANALİZİ (DXF)**")
-        st.markdown("Vektörel çizim dosyanızı doğrudan yükleyerek hassas sonuç alın.")
+        st.markdown("""
+        Vektörel çizim dosyanızı doğrudan yükleyerek %100 hassas sonuç alın.
+        
+        **Özellikler:**
+        * **Yalnızca DXF Desteği**
+        * Otomatik Yerleşim (Nesting)
+        """)
         if st.button("ÇİZİM DOSYASI YÜKLE", use_container_width=True, type="primary"):
             sayfa_degistir('dxf_analiz')
             st.rerun()
 
     with c3:
         st.success("🛠 **HAZIR PARÇA OLUŞTUR**")
-        st.markdown("Standart geometrik şekilleri manuel olarak oluşturun.")
+        st.markdown("""
+        Çiziminiz yoksa; standart geometrik şekilleri (Kare, Flanş vb.) manuel oluşturun.
+        
+        **Özellikler:**
+        * **Kare, Dikdörtgen, Daire**
+        * Delik Tanımlama
+        """)
         if st.button("MANUEL PARÇA OLUŞTUR", use_container_width=True, type="primary"):
             sayfa_degistir('hazir_parca')
             st.rerun()
