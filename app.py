@@ -319,6 +319,7 @@ elif st.session_state.sayfa == 'foto_analiz':
                             KDV DAHİL: {round(kdvli_fiyat, 2)} TL
                         </div>
                     </div>""", unsafe_allow_html=True)
+                    
         else:
              st.info("Lütfen bir görsel yükleyiniz.")
 
