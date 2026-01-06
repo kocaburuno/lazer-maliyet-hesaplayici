@@ -1,7 +1,7 @@
 # materials.py - Malzeme Verileri ve Sabitler
 
 # --- SABİT PARAMETRELER ---
-DK_UCRETI = 35.0        # Dakika Başına Kesim Ücreti
+DK_UCRETI = 40.0        # Dakika Başına Kesim Ücreti
 PIERCING_SURESI = 3.0   # Patlatma Süresi (Saniye)
 FIRE_ORANI = 1.15       # Fire Oranı (%15)
 KDV_ORANI = 1.20        # KDV (%20)
