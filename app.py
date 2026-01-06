@@ -225,7 +225,7 @@ with st.sidebar:
     guncel_hiz = hiz_tablosu[uygun_k]
 
     # Varsayılan fiyatı yeni anahtarla çekecek
-    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 30.0)
+    varsayilan_fiyat = materials.VARSAYILAN_FIYATLAR.get(metal, 29.0)
     
     st.markdown("---")
     
