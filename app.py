@@ -185,8 +185,7 @@ with st.sidebar:
     if 0.8 <= kalinlik <= 1.5:
         # İnce Malzemeler: 125x250 seçeneği var, 6 metre yok
         plaka_secenekleri = {
-            "100x200cm": (1000, 2000), 
-            "125x250cm": (1250, 2500), 
+            "100x200cm": (1000, 2000),  
             "150x300cm": (1500, 3000)
         }
     else:
