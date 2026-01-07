@@ -237,8 +237,7 @@ with st.sidebar:
     if 0.8 <= kalinlik <= 1.5:
         # İnce Malzemeler: 125x250 seçeneği var, 6 metre yok
         plaka_secenekleri = {
-            "100x200 cm": (1000, 2000),  
-            "125x250 cm": (1250, 2500), 
+            "100x200 cm": (1000, 2000),   
             "150x300 cm": (1500, 3000)
         }
     else:
@@ -256,7 +255,7 @@ with st.sidebar:
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
     if 'temp_kg_fiyat' not in st.session_state:
-        st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 33.0))
+        st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
 
     st.markdown("<br>", unsafe_allow_html=True) # Küçük bir boşluk
 
