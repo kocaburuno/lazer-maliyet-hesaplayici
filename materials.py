@@ -1,7 +1,7 @@
 # materials.py - Malzeme Verileri ve Sabitler
 
 # --- SABİT PARAMETRELER ---
-DK_UCRETI = 25.0        # Dakika Başına Kesim Ücreti
+DK_UCRETI = 40.0        # Dakika Başına Kesim Ücreti
 FIRE_ORANI = 1.15       # Fire Oranı (%15)
 KDV_ORANI = 1.20        # KDV (%20)
 
@@ -26,7 +26,7 @@ PIERCING_SURELERI = {
 
 # --- VARSAYILAN KG FİYATLARI ---
 VARSAYILAN_FIYATLAR = {
-    "DKP / HRP(Siyah Sac)": 30.0,
+    "DKP / HRP(Siyah Sac)": 29.0,
     "Paslanmaz": 150.0,
     "Alüminyum": 220.0
 }
