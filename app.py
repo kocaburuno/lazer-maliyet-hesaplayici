@@ -308,8 +308,7 @@ with st.sidebar:
     # --- 4. MALZEME KG FİYATI GİRİŞİ ---
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
-        min_value=0.0, 
-        value=st.session_state.temp_kg_fiyat, 
+        min_value=0.0,  
         step=1.0, 
         format="%g",
         key="kg_input_field"
