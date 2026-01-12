@@ -344,7 +344,7 @@ def landing_page():
         <div class="landing-card">
             <div class="landing-icon">⚙️</div>
             <div class="landing-title">2. Ayarları Yap (Sol Menü)</div>
-            <div class="landing-text">Analize başlamadan önce <b>sol taraftaki açılır menüden (< mobilde)</b> malzeme ve kalınlık seçin.</div>
+            <div class="landing-text">Analize başlamadan önce <b>Sol Taraftaki Kayar Menüden</b> malzeme ve kalınlık seçin.</div>
         </div>
         """, unsafe_allow_html=True)
         
