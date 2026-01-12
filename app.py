@@ -576,19 +576,15 @@ def main_app():
                               metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
 
 def landing_page():
-    # Header Centering Strategy: Using columns to center the content
-    # [3, 4, 3] creates a center column that takes up 40% of the width
     col_left, col_center, col_right = st.columns([3, 4, 3]) 
     
     with col_center:
-        # 1. LOGO
         try:
-            # use_column_width=True makes it fill the 'col_center' width
-            st.image("logo.png", use_column_width=True) 
+            # REVİZE: use_column_width YERİNE SABİT width KULLANILDI
+            st.image("logo.png", width=200) 
         except:
             st.markdown("<h2 style='text-align: center; color: #1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
         
-        # 2. LINK (Sidebar style match)
         st.markdown("""
             <div style='text-align: center; margin-top: -10px; margin-bottom: 25px;'>
                 <a href='https://www.alanlazer.com' target='_blank' 
@@ -600,7 +596,6 @@ def landing_page():
     
     st.markdown("<h1 style='text-align: center; color: #1C3768; margin-bottom: 30px;'>Profesyonel Lazer ve Büküm Maliyet Analizi</h1>", unsafe_allow_html=True)
     
-    # 3 Adım Kartları (Görsel Anlatım)
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -632,7 +627,6 @@ def landing_page():
     
     st.markdown("<br><br>", unsafe_allow_html=True)
     
-    # Başla Butonu
     c_btn1, c_btn2, c_btn3 = st.columns([1, 2, 1])
     with c_btn2:
         if st.button("ANALİZE BAŞLA", use_container_width=True, type="primary"):
