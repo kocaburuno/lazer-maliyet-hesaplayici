@@ -114,11 +114,8 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     p_suresi = materials.PIERCING_SURELERI.get(kalinlik, 1.0)
     
     # --- 1. AĞIRLIK HESABI ---
-    # Tek parça ağırlığı
     tek_agirlik = (alan_mm2 * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6)
-    # Toplam fireli ağırlık (Fiyatlandırma için)
     toplam_agirlik_fireli = tek_agirlik * adet * FIRE_ORANI
-    # Toplam net ağırlık (100kg limiti kontrolü için net ağırlığa bakılır veya fireliye bakılır, genelde fireliye bakılır)
     limit_kontrol_agirligi = toplam_agirlik_fireli 
 
     # --- 2. MALZEME & LAZER HESABI ---
@@ -127,23 +124,15 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     malzeme_tutar = toplam_agirlik_fireli * kg_fiyat
     lazer_tutar = sure_dk * DK_UCRETI
     
-    # --- 3. BÜKÜM HESABI (YENİ) ---
+    # --- 3. BÜKÜM HESABI ---
     bukum_tutar = 0.0
-    aktif_bukum_baz_fiyat = bukum_baz_fiyat_manual # Varsayılan olarak manueli al
+    aktif_bukum_baz_fiyat = bukum_baz_fiyat_manual
     
     if bukum_adedi > 0:
-        # Kural: Malzeme ağırlığı 100 kg'ı geçerse baz fiyat 30 TL olur.
         if limit_kontrol_agirligi > 100:
             aktif_bukum_baz_fiyat = 30.0
         
-        # Kural: 1. büküm 100, 2. büküm 150 (%50 artış), 3. büküm 225 (%50 artış)
-        # Formül: BazFiyat * (1.5 ^ (BükümSayisi - 1))
-        # Örnek: 1 büküm -> 100 * (1.5^0) = 100
-        # Örnek: 2 büküm -> 100 * (1.5^1) = 150
-        # Örnek: 3 büküm -> 100 * (1.5^2) = 225
-        
         carpan = 1.5 ** (bukum_adedi - 1)
-        # Fiyatlandırma kg başınadır
         bukum_tutar = limit_kontrol_agirligi * aktif_bukum_baz_fiyat * carpan
 
     # --- TOPLAM ---
@@ -163,7 +152,6 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
         </div>""", unsafe_allow_html=True)
         
     with c2:
-        # Detaylı Fiyat Dökümü
         st.markdown(f"""<div class="analiz-bilgi-kutu">
             <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:14px; color:#555;">
                 <span>Malzeme:</span> <span style="font-weight:bold;">{round(malzeme_tutar, 2)} TL</span>
@@ -232,6 +220,7 @@ except:
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
+# CSS GÜNCELLEMESİ: SCROLLBAR GİZLEME EKLENDİ
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] div.block-container { padding-top: 1rem; }
@@ -249,6 +238,17 @@ st.markdown("""
             background-color: #ffffff; padding: 15px; border-radius: 12px;
             box-shadow: 0px 4px 15px rgba(0,0,0,0.2); border-top: 4px solid #1C3768; width: 250px;
         }
+        
+        /* --- SCROLLBAR GİZLEME (SIDEBAR İÇİN) --- */
+        section[data-testid="stSidebar"] ::-webkit-scrollbar {
+            display: none;
+        }
+        section[data-testid="stSidebar"] {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* ----------------------------------------- */
+
         @media only screen and (max_width: 600px) {
             .floating-pdf-container {
                 width: 90% !important; left: 5% !important; right: 5% !important;
@@ -318,7 +318,6 @@ with st.sidebar:
     else: default_bukum_baz = 100.0 # Varsayılan
 
     # Session State yönetimi (Büküm Baz Fiyat için)
-    # Kalınlık değiştiğinde varsayılana dönmeli
     if 'last_kalinlik' not in st.session_state or st.session_state.last_kalinlik != kalinlik:
         st.session_state.bukum_baz_input = default_bukum_baz
         st.session_state.last_kalinlik = kalinlik
@@ -346,7 +345,7 @@ with st.sidebar:
             </div>
         """, unsafe_allow_html=True)
     
-    # Turuncu Büküm Fiyat Kutusu (Yeni)
+    # Turuncu Büküm Fiyat Kutusu
     st.markdown(f"""
         <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; color: #856404; box-shadow: 0px 2px 4px rgba(0,0,0,0.1); margin-top:10px;">
             <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Büküm Baz (TL/kg)</div>
