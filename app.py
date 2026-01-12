@@ -5,7 +5,7 @@ import numpy as np
 import math
 import tempfile
 import os
-import base64  # Logo ortalama işlemi için eklendi
+import base64
 
 # --- HARİCİ VERİ DOSYASINDAN OKUMA ---
 import materials 
@@ -296,10 +296,6 @@ def landing_page():
     st.write("")
 
     # 2. LOGOYU TAM ORTALAMAK İÇİN ÖZEL YAPI
-    # [1, 1, 1] kolon yapısı ile ortadaki kolonu kullanıyoruz.
-    # Ancak st.image yerine HTML + Base64 ile "margin: auto" kullanacağız.
-    # Bu, Streamlit'in sola yaslama huyunu ezer ve kırık link problemini çözer.
-    
     col_left, col_center, col_right = st.columns([1, 1, 1]) 
     
     with col_center:
@@ -308,7 +304,6 @@ def landing_page():
             try:
                 with open("logo.png", "rb") as image_file:
                     encoded_string = base64.b64encode(image_file.read()).decode()
-                # CSS ile 'margin: 0 auto' vererek tam ortalıyoruz.
                 logo_html = f"""
                     <div style="display: flex; justify-content: center; margin-bottom: 5px;">
                         <img src="data:image/png;base64,{encoded_string}" width="200" style="display: block;">
@@ -321,7 +316,6 @@ def landing_page():
             
         st.markdown(logo_html, unsafe_allow_html=True)
         
-        # LINK (Sidebar stiliyle aynı)
         st.markdown("""
             <div style='text-align: center; margin-bottom: 25px;'>
                 <a href='https://www.alanlazer.com' target='_blank' 
@@ -329,7 +323,6 @@ def landing_page():
             </div>
         """, unsafe_allow_html=True)
     
-    # 3. Ayırıcı ve Başlık
     st.divider()
     st.markdown("<h1 style='text-align: center; color: #1C3768; margin-bottom: 40px;'>Profesyonel Lazer ve Büküm Maliyet Analizi</h1>", unsafe_allow_html=True)
     
@@ -346,11 +339,12 @@ def landing_page():
         """, unsafe_allow_html=True)
         
     with col2:
+        # REVİZE: Kullanıcıyı Sol Menüye Yönlendiren Metin
         st.markdown("""
         <div class="landing-card">
             <div class="landing-icon">⚙️</div>
-            <div class="landing-title">2. Yapılandır</div>
-            <div class="landing-text">Malzeme türünü, kalınlığını seçin ve büküm adetlerini girin.</div>
+            <div class="landing-title">2. Ayarları Yap (Sol Menü)</div>
+            <div class="landing-text">Analize başlamadan önce <b>sol taraftaki (mobilde >) açılır menüden</b> malzeme ve kalınlık seçin.</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -365,7 +359,6 @@ def landing_page():
     
     st.markdown("<br><br>", unsafe_allow_html=True)
     
-    # 5. Başla Butonu (Ortalanmış)
     c_btn1, c_btn2, c_btn3 = st.columns([1, 2, 1])
     with c_btn2:
         if st.button("ANALİZE BAŞLA", use_container_width=True, type="primary"):
@@ -454,7 +447,8 @@ def main_app():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        with st.expander("Yönetici Ayarları"):
+        # REVİZE: Başlık Değiştirildi
+        with st.expander("Birim Fiyatlar"):
             st.write("Malzeme Fiyatı:")
             st.number_input("Manuel Sac Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="kg_input_field")
             st.markdown("---")
