@@ -227,23 +227,28 @@ with st.sidebar:
     # 1. Metal, Kalınlık ve Adet Seçimi
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
 
-    # --- FİYAT GÜNCELLEME MANTIĞI (BAŞLANGIÇ) ---
-    # Eğer sistemde son seçilen metal kayıtlı değilse (ilk açılış), kaydet.
-    if 'last_metal' not in st.session_state:
-        st.session_state.last_metal = metal
+    # --- FİYAT BAŞLATMA VE GÜNCELLEME MANTIĞI (DÜZELTİLDİ) ---
+    # Seçilen metalin varsayılan fiyatını çekiyoruz
+    secilen_metalin_fiyati = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
 
-    # Eğer kullanıcı metali değiştirdiyse (Eski metal != Yeni metal)
-    if st.session_state.last_metal != metal:
-        # 1. Yeni metalin varsayılan fiyatını çek
-        yeni_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
+    # KURAL: Eğer sistem ilk kez açılıyorsa ('last_metal' yoksa) 
+    # VEYA kullanıcı metali değiştirdiyse fiyatı güncelle.
+    if 'last_metal' not in st.session_state or st.session_state.last_metal != metal:
+        # 1. Session state içindeki input değerini (kg_input_field) güncelle
+        st.session_state.kg_input_field = secilen_metalin_fiyati
         
-        # 2. Ana fiyat değişkenini güncelle
-        st.session_state.temp_kg_fiyat = yeni_fiyat
+        # 2. Geçici fiyat değişkenini güncelle
+        st.session_state.temp_kg_fiyat = secilen_metalin_fiyati
         
-        # 3. Input alanının (kg_input_field) hafızasını da zorla güncelle
-        # (Bunu yapmazsak kutucuk eski değerde kalabilir)
-        if 'kg_input_field' in st.session_state:
-            st.session_state.kg_input_field = yeni_fiyat
+        # 3. Son seçilen metali kaydet
+        st.session_state.last_metal = metal
+    # ---------------------------------------------------------
+
+    col_s1, col_s2 = st.columns(2)
+    with col_s1:
+        kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
+    with col_s2:
+        adet = st.number_input("Adet", min_value=1, value=1, step=1)
             
         # 4. Son metal bilgisini güncelle
         st.session_state.last_metal = metal
