@@ -1,11 +1,30 @@
-# materials.py - Malzeme Verileri ve Sabitler
+# materials.py - Malzeme, Lazer ve Büküm Verileri
 
-# --- SABİT PARAMETRELER ---
-DK_UCRETI = 45.0        # Dakika Başına Kesim Ücreti
-FIRE_ORANI = 1.20       # Fire Oranı (%20)
-KDV_ORANI = 1.20        # KDV (%20)
+# ==========================================
+# 1. GENEL MALİYET VE FİRE AYARLARI
+# ==========================================
+DK_UCRETI = 45.0        # Dakika Başına Kesim Ücreti (TL)
+FIRE_ORANI = 1.20       # Fire Oranı (%20 -> 1.20 ile çarpılır)
+KDV_ORANI = 1.20        # KDV Oranı (%20)
 
-# --- PIERCING (PATLATMA) SÜRELERİ (Saniye) ---
+# ==========================================
+# 2. BÜKÜM (ABKANT) FİYATLANDIRMA KURALLARI
+# ==========================================
+# Eğer toplam ağırlık bu limiti geçerse, kalınlığa bakılmaksızın toptan fiyat uygulanır.
+BUKUM_TOPTAN_LIMIT_KG = 100.0   
+BUKUM_TOPTAN_FIYAT = 30.0       # Toptan birim fiyatı (TL/kg)
+
+# Kalınlığa Göre Standart Büküm Baz Fiyatları (TL/kg)
+# (100 kg altındaki işlerde kullanılır)
+BUKUM_F_0_2_MM = 100.0    # 0.8mm - 2.0mm arası (dahil değil)
+BUKUM_F_2_5_MM = 80.0     # 2.0mm - 5.0mm arası (dahil değil)
+BUKUM_F_5_6_MM = 60.0     # 5.0mm - 6.0mm arası (dahil değil)
+BUKUM_F_6_10_MM = 40.0    # 6.0mm - 10.0mm arası (dahil)
+BUKUM_F_STANDART = 100.0  # Tanımsız aralıklar için varsayılan
+
+# ==========================================
+# 3. PIERCING (PATLATMA) SÜRELERİ (Saniye)
+# ==========================================
 # Mantık: Kalınlık (mm) : Süre (sn)
 PIERCING_SURELERI = {
     0.8: 1.0,
@@ -24,14 +43,18 @@ PIERCING_SURELERI = {
     20.0: 7.5
 }
 
-# --- VARSAYILAN KG FİYATLARI ---
+# ==========================================
+# 4. VARSAYILAN SAC KG FİYATLARI (TL)
+# ==========================================
 VARSAYILAN_FIYATLAR = {
     "DKP / HRP(Siyah Sac)": 29.0,
     "Paslanmaz": 150.0,
     "Alüminyum": 220.0
 }
 
-# --- MALZEME VERİTABANI ---
+# ==========================================
+# 5. MALZEME VERİTABANI (Hız, Özkütle, Kalınlıklar)
+# ==========================================
 VERİ = {
     "DKP / HRP(Siyah Sac)": {
         "ozkutle": 7.85, 
