@@ -16,11 +16,11 @@ BUKUM_TOPTAN_FIYAT = 30.0       # Toptan birim fiyatı (TL/kg)
 
 # Kalınlığa Göre Standart Büküm Baz Fiyatları (TL/kg)
 # (100 kg altındaki işlerde kullanılır)
-BUKUM_F_0_2_MM = 100.0    # 0.8mm - 2.0mm arası (dahil değil)
-BUKUM_F_2_5_MM = 80.0     # 2.0mm - 5.0mm arası (dahil değil)
-BUKUM_F_5_6_MM = 60.0     # 5.0mm - 6.0mm arası (dahil değil)
-BUKUM_F_6_10_MM = 40.0    # 6.0mm - 10.0mm arası (dahil)
-BUKUM_F_STANDART = 100.0  # Tanımsız aralıklar için varsayılan
+BUKUM_F_0_2_MM = 80.0    # 0.8mm - 2.0mm arası (dahil değil)
+BUKUM_F_2_5_MM = 65.0     # 2.0mm - 5.0mm arası (dahil değil)
+BUKUM_F_5_6_MM = 50.0     # 5.0mm - 6.0mm arası (dahil değil)
+BUKUM_F_6_10_MM = 35.0    # 6.0mm - 10.0mm arası (dahil)
+BUKUM_F_STANDART = 90.0  # Tanımsız aralıklar için varsayılan
 
 # ==========================================
 # 3. PIERCING (PATLATMA) SÜRELERİ (Saniye)
