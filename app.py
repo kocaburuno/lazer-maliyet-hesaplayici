@@ -226,7 +226,33 @@ with st.sidebar:
     
     # 1. Metal, Kalınlık ve Adet Seçimi
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
-    
+
+    # --- FİYAT GÜNCELLEME MANTIĞI (BAŞLANGIÇ) ---
+    # Eğer sistemde son seçilen metal kayıtlı değilse (ilk açılış), kaydet.
+    if 'last_metal' not in st.session_state:
+        st.session_state.last_metal = metal
+
+    # Eğer kullanıcı metali değiştirdiyse (Eski metal != Yeni metal)
+    if st.session_state.last_metal != metal:
+        # 1. Yeni metalin varsayılan fiyatını çek
+        yeni_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
+        
+        # 2. Ana fiyat değişkenini güncelle
+        st.session_state.temp_kg_fiyat = yeni_fiyat
+        
+        # 3. Input alanının (kg_input_field) hafızasını da zorla güncelle
+        # (Bunu yapmazsak kutucuk eski değerde kalabilir)
+        if 'kg_input_field' in st.session_state:
+            st.session_state.kg_input_field = yeni_fiyat
+            
+        # 4. Son metal bilgisini güncelle
+        st.session_state.last_metal = metal
+        
+    # Eğer değişken hiç yoksa (ilk yükleme garanitisi)
+    if 'temp_kg_fiyat' not in st.session_state:
+        st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
+    # --- FİYAT GÜNCELLEME MANTIĞI (BİTİŞ) ---
+
     col_s1, col_s2 = st.columns(2)
     with col_s1:
         kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
