@@ -115,7 +115,6 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * p_suresi / 60)
     
     # 2. Ağırlık ve Fiyat Hesabı
-    # Alan mm2 -> m2 dönüşümü (1e6)
     agirlik = (alan_mm2 * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
     fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyat)
     kdvli_fiyat = fiyat * KDV_ORANI
@@ -221,46 +220,18 @@ st.markdown("""
 if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
-
 # ==========================================
-# 3. SIDEBAR (Sadece Bilgi)
-# ==========================================
-with st.sidebar:
-    try:
-        st.image("logo.png", use_column_width=True)
-    except:
-        st.markdown("<h2 style='text-align: center; color: #1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.info("ℹ️ Bu panel bilgilendirme amaçlıdır. Üretim ayarları ana ekrandadır.")
-    
-    guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
-    st.markdown(f"""
-        <div style="background-color: #d4edda; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; color: #155724;">
-            <div style="font-size: 11px; font-weight: 600; opacity: 0.8;">Birim(TL/kg)</div>
-            <div style="font-size: 17px; font-weight: bold;">{guncel_fiyat_gosterim} TL</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    with st.expander("Yönetici Ayarı (Birim Fiyat)"):
-         kg_fiyati_manuel = st.number_input("Manuel Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="kg_input_field_manual")
-         if kg_fiyati_manuel > 0:
-             st.session_state.kg_input_field = kg_fiyati_manuel
-
-
-# ==========================================
-# 4. ANA SAYFA & HİBRİT AYAR MENÜSÜ
+# 3. ANA PANEL (INPUTLAR)
+# (Sidebar verileri buna bağlı olduğu için önce burası çalışmalı)
 # ==========================================
 st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
 
-# --- RESPONSIVE AYARLAR (ÜST BANT) ---
 st.markdown("### ⚙️ Malzeme ve Üretim Ayarları")
 with st.container():
     c_h1, c_h2, c_h3 = st.columns(3)
     
     with c_h1:
         metal = st.selectbox("1. Metal Türü", list(materials.VERİ.keys()))
-        
         # FİYAT GÜNCELLEME MANTIĞI
         secilen_metalin_fiyati = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
         if 'last_metal' not in st.session_state or st.session_state.last_metal != metal:
@@ -273,7 +244,7 @@ with st.container():
     with c_h3:
         adet = st.number_input("3. Adet", min_value=1, value=1, step=1)
 
-    # Arka plan hesaplamaları
+    # HESAPLAMALAR (Sidebar'a veri göndermek için)
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
@@ -283,10 +254,62 @@ with st.container():
         plaka_secenekleri = {"100x200 cm": (1000, 2000), "150x300 cm": (1500, 3000), "150x600 cm": (1500, 6000)}
     secilen_plaka_adi = list(plaka_secenekleri.keys())[0]
 
+# ==========================================
+# 4. SIDEBAR (REVİZE EDİLDİ: HIZ KUTUSU + LINK)
+# ==========================================
+with st.sidebar:
+    try:
+        st.image("logo.png", use_column_width=True)
+    except:
+        st.markdown("<h2 style='text-align: center; color: #1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
+    
+    # İstenilen Link Alanı
+    st.markdown(
+        """
+        <div style='text-align: center; margin-top: -10px; margin-bottom: 25px;'>
+            <a href='https://www.alanlazer.com' target='_blank' 
+               style='text-decoration: none; color: #1C3768; font-size: 22px; font-weight: 300; letter-spacing: 1.5px; font-family: "Segoe UI Semilight", "Segoe UI", sans-serif;'>
+                alanlazer.com
+            </a>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    st.markdown("---")
+    
+    # Hız ve Fiyat Kutuları (Yan Yana)
+    col_sb1, col_sb2 = st.columns(2)
+    
+    with col_sb1:
+        # Mavi Hız Kutusu
+        st.markdown(f"""
+            <div style="background-color: #e7f3fe; padding: 10px; border-radius: 8px; border-left: 4px solid #2196F3; color: #0c5460; min-height: 80px;">
+                <div style="font-size: 11px; font-weight: 600; opacity: 0.8; margin-bottom: 2px;">Hız (mm/dk)</div>
+                <div style="font-size: 17px; font-weight: bold;">{guncel_hiz}</div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    with col_sb2:
+        # Yeşil Fiyat Kutusu
+        guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
+        st.markdown(f"""
+            <div style="background-color: #d4edda; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; color: #155724; min-height: 80px;">
+                <div style="font-size: 11px; font-weight: 600; opacity: 0.8; margin-bottom: 2px;">Birim (TL/kg)</div>
+                <div style="font-size: 17px; font-weight: bold;">{guncel_fiyat_gosterim} TL</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    with st.expander("Yönetici Ayarı (Birim Fiyat)"):
+         kg_fiyati_manuel = st.number_input("Manuel Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="kg_input_field_manual")
+         if kg_fiyati_manuel > 0:
+             st.session_state.kg_input_field = kg_fiyati_manuel
+
 st.divider()
 
 # ==========================================
-# 5. SAYFA İÇERİKLERİ
+# 5. SAYFA İÇERİKLERİ (SEKMELER VE MODÜLLER)
 # ==========================================
 
 # --- ANASAYFA (SEKMELER) ---
@@ -339,7 +362,6 @@ elif st.session_state.sayfa == 'foto_analiz':
     if 'gecici_gorsel' in st.session_state and st.session_state.gecici_gorsel:
         # Görsel İşleme
         file_bytes = np.asarray(bytearray(st.session_state.gecici_gorsel.read()), dtype=np.uint8)
-        # Streamlit file buffer pointer'ı sona gittiği için tekrar okumak gerekebilir, resetleyelim
         st.session_state.gecici_gorsel.seek(0)
         
         original_img = cv2.imdecode(file_bytes, 1)
@@ -354,7 +376,6 @@ elif st.session_state.sayfa == 'foto_analiz':
             if contours and hierarchy is not None:
                 for i, cnt in enumerate(contours):
                     x_b, y_b, w_b, h_b = cv2.boundingRect(cnt)
-                    # Çok büyük (çerçeve) veya hiyerarşisi bozuk olanları ele
                     if w_b > w_img * 0.96 or h_b > h_img * 0.96: continue
                     if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                         valid_contour_list.append(cnt)
