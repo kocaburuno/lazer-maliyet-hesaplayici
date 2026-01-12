@@ -12,7 +12,7 @@ import materials
 from fpdf import FPDF
 
 # ==========================================
-# 1. YARDIMCI FONKSİYONLAR (DEĞİŞTİRİLMEDİ)
+# 1. YARDIMCI FONKSİYONLAR
 # ==========================================
 
 def generate_pdf(data_dict, image_path=None):
@@ -195,7 +195,7 @@ if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
 # ==========================================
-# 3. SIDEBAR (GÜNCELLENMİŞ TASARIM)
+# 3. SIDEBAR (LOGOLU, ORİJİNAL YERLEŞİM)
 # ==========================================
 with st.sidebar:
     # A) LOGO VE LİNK
@@ -234,7 +234,7 @@ with st.sidebar:
         plaka_secenekleri = {"100x200 cm": (1000, 2000), "150x300 cm": (1500, 3000), "150x600 cm": (1500, 6000)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
 
-    # C) BİLGİ KUTULARI (YENİ TASARIM)
+    # C) BİLGİ KUTULARI (MODERN VE BELİRGİN TASARIM)
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
@@ -242,7 +242,7 @@ with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
     col_i1, col_i2 = st.columns(2)
     
-    # Mavi Hız Kutusu (Yeni Tasarım)
+    # Mavi Hız Kutusu
     with col_i1:
         st.markdown(f"""
             <div style="background-color: #e7f3fe; padding: 15px; border-radius: 10px; border-left: 5px solid #2196F3; color: #0c5460; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
@@ -251,7 +251,7 @@ with st.sidebar:
             </div>
         """, unsafe_allow_html=True)
         
-    # Yeşil Fiyat Kutusu (Yeni Tasarım)
+    # Yeşil Fiyat Kutusu
     with col_i2:
         st.markdown(f"""
             <div style="background-color: #d4edda; padding: 15px; border-radius: 10px; border-left: 5px solid #28a745; color: #155724; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
@@ -273,27 +273,17 @@ with st.sidebar:
          )
 
 # ==========================================
-# 4. ANA PANEL (İÇERİK)
+# 4. ANA PANEL (İÇERİK - LOGOSUZ/SADE)
 # ==========================================
 
-# --- MOBİL İÇİN BAŞLIK (Sidebar kapalıyken görünür) ---
-col_main_logo, col_main_text = st.columns([1, 5])
-with col_main_logo:
-    try:
-        st.image("logo.png", width=80)
-    except:
-        pass
-with col_main_text:
-    st.markdown("<h2 style='margin-top: -10px; color:#1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color:grey; font-size:14px; margin-top:-15px;'>AI Destekli Profesyonel Analiz</p>", unsafe_allow_html=True)
-
-st.divider()
-
-# --- SAYFA İÇERİKLERİ ---
+st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
+# Main area logo/link kısmı kaldırıldı, sadece başlık var.
 
 if st.session_state.sayfa == 'anasayfa':
     st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
+    st.divider()
     
+    # 3 Sekmeli Yapı
     tab1, tab2, tab3 = st.tabs(["📸 FOTOĞRAF", "📐 DXF ÇİZİM", "🛠 MANUEL"])
     
     with tab1:
