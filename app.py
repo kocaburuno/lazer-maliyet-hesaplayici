@@ -7,6 +7,7 @@ import tempfile
 import os
 
 # --- HARİCİ VERİ DOSYASINDAN OKUMA ---
+# Büküm fiyatları artık buradan geliyor
 import materials 
 
 from fpdf import FPDF
@@ -103,7 +104,7 @@ def generate_pdf(data_dict, image_path=None):
         return str(e).encode()
 
 def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_bgr, metal, kalinlik, adet, guncel_hiz, plaka_adi, bukum_adedi):
-    # --- SABİTLER ---
+    # --- SABİTLER (MATERIALS'DEN GELİYOR) ---
     DK_UCRETI = materials.DK_UCRETI
     FIRE_ORANI = materials.FIRE_ORANI
     KDV_ORANI = materials.KDV_ORANI
@@ -124,13 +125,14 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     malzeme_tutar = toplam_agirlik_fireli * kg_fiyat
     lazer_tutar = sure_dk * DK_UCRETI
     
-    # --- 3. BÜKÜM HESABI ---
+    # --- 3. BÜKÜM HESABI (REVİZE: materials'den veri çekiyor) ---
     bukum_tutar = 0.0
     aktif_bukum_baz_fiyat = bukum_baz_fiyat_manual
     
     if bukum_adedi > 0:
-        if limit_kontrol_agirligi > 100:
-            aktif_bukum_baz_fiyat = 30.0
+        # Ağırlık limitini materials dosyasından kontrol et
+        if limit_kontrol_agirligi > materials.BUKUM_TOPTAN_LIMIT_KG:
+            aktif_bukum_baz_fiyat = materials.BUKUM_TOPTAN_FIYAT
         
         carpan = 1.5 ** (bukum_adedi - 1)
         bukum_tutar = limit_kontrol_agirligi * aktif_bukum_baz_fiyat * carpan
@@ -220,7 +222,7 @@ except:
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
-# CSS GÜNCELLEMESİ: SCROLLBAR GİZLEME EKLENDİ
+# CSS: SCROLLBAR GİZLEME VE STİL AYARLARI
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] div.block-container { padding-top: 1rem; }
@@ -239,15 +241,9 @@ st.markdown("""
             box-shadow: 0px 4px 15px rgba(0,0,0,0.2); border-top: 4px solid #1C3768; width: 250px;
         }
         
-        /* --- SCROLLBAR GİZLEME (SIDEBAR İÇİN) --- */
-        section[data-testid="stSidebar"] ::-webkit-scrollbar {
-            display: none;
-        }
-        section[data-testid="stSidebar"] {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
-        /* ----------------------------------------- */
+        /* SCROLLBAR GİZLEME */
+        section[data-testid="stSidebar"] ::-webkit-scrollbar { display: none; }
+        section[data-testid="stSidebar"] { -ms-overflow-style: none; scrollbar-width: none; }
 
         @media only screen and (max_width: 600px) {
             .floating-pdf-container {
@@ -282,7 +278,7 @@ with st.sidebar:
     # B) SEÇİM ARAÇLARI
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
 
-    # Fiyat Başlatma/Güncelleme Mantığı (Malzeme)
+    # Fiyat Başlatma (Malzeme)
     secilen_metalin_fiyati = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
     if 'last_metal' not in st.session_state or st.session_state.last_metal != metal:
         st.session_state.kg_input_field = secilen_metalin_fiyati
@@ -294,7 +290,6 @@ with st.sidebar:
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
-    # Yeni: Büküm Sayısı Girdisi
     bukum_adedi = st.number_input("Büküm Sayısı (Parça Başı)", min_value=0, value=0, step=1)
 
     # Plaka Seçimi
@@ -309,15 +304,14 @@ with st.sidebar:
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
     
-    # Büküm Baz Fiyat Hesaplama (Kalınlığa Göre Varsayılan)
-    default_bukum_baz = 0.0
-    if 0.8 <= kalinlik < 2.0: default_bukum_baz = 100.0
-    elif 2.0 <= kalinlik < 5.0: default_bukum_baz = 80.0
-    elif 5.0 <= kalinlik < 6.0: default_bukum_baz = 60.0
-    elif 6.0 <= kalinlik <= 10.0: default_bukum_baz = 40.0
-    else: default_bukum_baz = 100.0 # Varsayılan
+    # Büküm Baz Fiyat Hesaplama (REVİZE: materials dosyasından çekiyor)
+    default_bukum_baz = materials.BUKUM_F_STANDART
+    if 0.8 <= kalinlik < 2.0: default_bukum_baz = materials.BUKUM_F_0_2_MM
+    elif 2.0 <= kalinlik < 5.0: default_bukum_baz = materials.BUKUM_F_2_5_MM
+    elif 5.0 <= kalinlik < 6.0: default_bukum_baz = materials.BUKUM_F_5_6_MM
+    elif 6.0 <= kalinlik <= 10.0: default_bukum_baz = materials.BUKUM_F_6_10_MM
 
-    # Session State yönetimi (Büküm Baz Fiyat için)
+    # Session State yönetimi
     if 'last_kalinlik' not in st.session_state or st.session_state.last_kalinlik != kalinlik:
         st.session_state.bukum_baz_input = default_bukum_baz
         st.session_state.last_kalinlik = kalinlik
@@ -350,13 +344,13 @@ with st.sidebar:
         <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; color: #856404; box-shadow: 0px 2px 4px rgba(0,0,0,0.1); margin-top:10px;">
             <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Büküm Baz (TL/kg)</div>
             <div style="font-size: 18px; font-weight: 800;">{guncel_bukum_baz} TL</div>
-            <div style="font-size: 9px; opacity:0.8;">(100kg üstü: 30 TL)</div>
+            <div style="font-size: 9px; opacity:0.8;">({int(materials.BUKUM_TOPTAN_LIMIT_KG)}kg üstü: {int(materials.BUKUM_TOPTAN_FIYAT)} TL)</div>
         </div>
     """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # D) YÖNETİCİ AYARI (Genişletildi)
+    # D) YÖNETİCİ AYARI
     with st.expander("Yönetici Ayarları"):
          st.write("Malzeme Fiyatı:")
          st.number_input("Manuel Sac Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="kg_input_field")
@@ -378,8 +372,7 @@ if st.session_state.sayfa == 'anasayfa':
     
     with tab1:
         st.info("Parçanın fotoğrafını çekin veya yükleyin (Fotoğraf Çek / Galeri).")
-        
-        # REVİZE: KAMERA KALDIRILDI, SADECE UPLOAD KALDI
+        # SADECE FILE UPLOADER KALDI
         upl_val = st.file_uploader("Görsel Yükle", type=['jpg', 'png', 'jpeg'])
         
         if upl_val:
