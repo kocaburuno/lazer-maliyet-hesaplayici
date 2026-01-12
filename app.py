@@ -262,7 +262,7 @@ if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
 # ==========================================
-# 3. SIDEBAR (BÜKÜM DAHİL EDİLDİ)
+# 3. SIDEBAR (BÜKÜM DAHİL)
 # ==========================================
 with st.sidebar:
     # A) LOGO VE LİNK
@@ -377,15 +377,13 @@ if st.session_state.sayfa == 'anasayfa':
     tab1, tab2, tab3 = st.tabs(["📸 FOTOĞRAF", "📐 DXF ÇİZİM", "🛠 MANUEL"])
     
     with tab1:
-        st.info("Parçanın fotoğrafını çekin veya yükleyin.")
-        c_cam, c_upl = st.columns(2)
-        with c_cam:
-            cam_val = st.camera_input("Fotoğraf Çek")
-        with c_upl:
-            upl_val = st.file_uploader("Galeriden Seç", type=['jpg', 'png', 'jpeg'])
+        st.info("Parçanın fotoğrafını çekin veya yükleyin (Fotoğraf Çek / Galeri).")
         
-        if cam_val or upl_val:
-            st.session_state.gecici_gorsel = cam_val if cam_val else upl_val
+        # REVİZE: KAMERA KALDIRILDI, SADECE UPLOAD KALDI
+        upl_val = st.file_uploader("Görsel Yükle", type=['jpg', 'png', 'jpeg'])
+        
+        if upl_val:
+            st.session_state.gecici_gorsel = upl_val
             sayfa_degistir('foto_analiz')
             st.rerun()
 
