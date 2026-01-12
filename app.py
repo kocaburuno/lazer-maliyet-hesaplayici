@@ -5,6 +5,7 @@ import numpy as np
 import math
 import tempfile
 import os
+import base64  # Logo ortalama işlemi için eklendi
 
 # --- HARİCİ VERİ DOSYASINDAN OKUMA ---
 import materials 
@@ -45,16 +46,10 @@ st.markdown("""
             box-shadow: 0px 4px 15px rgba(0,0,0,0.2); border-top: 4px solid #1C3768; width: 250px;
         }
         
-        /* SCROLLBAR GİZLEME (Sidebar ve Ana Sayfa) */
+        /* SCROLLBAR GİZLEME */
         section[data-testid="stSidebar"] ::-webkit-scrollbar { display: none; }
         section[data-testid="stSidebar"] { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* LANDING PAGE GÖRSEL ORTALAMA */
-        [data-testid="stImage"] {
-            display: flex;
-            justify-content: center;
-        }
-
         /* LANDING PAGE KARTLARI */
         .landing-card {
             background-color: #f8f9fa;
@@ -300,20 +295,35 @@ def landing_page():
     st.write("")
     st.write("")
 
-    # 2. MERKEZİ YAPI (Sol Boşluk - İçerik - Sağ Boşluk)
-    # [1, 0.8, 1] oranı ile içerik tam ortada ve kompakt durur.
-    col_left, col_center, col_right = st.columns([1, 0.8, 1]) 
+    # 2. LOGOYU TAM ORTALAMAK İÇİN ÖZEL YAPI
+    # [1, 1, 1] kolon yapısı ile ortadaki kolonu kullanıyoruz.
+    # Ancak st.image yerine HTML + Base64 ile "margin: auto" kullanacağız.
+    # Bu, Streamlit'in sola yaslama huyunu ezer ve kırık link problemini çözer.
+    
+    col_left, col_center, col_right = st.columns([1, 1, 1]) 
     
     with col_center:
-        # A) LOGO (HTML yerine Streamlit image kullanıldı - Hata çözümü)
-        try:
-            st.image("logo.png", width=220) 
-        except:
-            st.markdown("<h1 style='text-align: center; color: #1C3768;'>ALAN LAZER</h1>", unsafe_allow_html=True)
+        logo_html = ""
+        if os.path.exists("logo.png"):
+            try:
+                with open("logo.png", "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode()
+                # CSS ile 'margin: 0 auto' vererek tam ortalıyoruz.
+                logo_html = f"""
+                    <div style="display: flex; justify-content: center; margin-bottom: 5px;">
+                        <img src="data:image/png;base64,{encoded_string}" width="200" style="display: block;">
+                    </div>
+                """
+            except:
+                logo_html = "<h1 style='text-align: center; color: #1C3768;'>ALAN LAZER</h1>"
+        else:
+            logo_html = "<h1 style='text-align: center; color: #1C3768;'>ALAN LAZER</h1>"
+            
+        st.markdown(logo_html, unsafe_allow_html=True)
         
-        # B) LINK (Sidebar stiliyle aynı)
+        # LINK (Sidebar stiliyle aynı)
         st.markdown("""
-            <div style='text-align: center; margin-top: 5px; margin-bottom: 25px;'>
+            <div style='text-align: center; margin-bottom: 25px;'>
                 <a href='https://www.alanlazer.com' target='_blank' 
                    style='text-decoration: none; color: #1C3768; font-size: 22px; font-weight: 300;'>alanlazer.com</a>
             </div>
