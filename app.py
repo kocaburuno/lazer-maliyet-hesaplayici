@@ -12,7 +12,7 @@ import materials
 from fpdf import FPDF
 
 # ==========================================
-# 1. YARDIMCI FONKSİYONLAR
+# 1. YARDIMCI FONKSİYONLAR (DEĞİŞTİRİLMEDİ)
 # ==========================================
 
 def generate_pdf(data_dict, image_path=None):
@@ -144,7 +144,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# 2. AYARLAR
+# 2. AYARLAR VE SAYFA YAPISI
 # ==========================================
 try:
     import ezdxf
@@ -195,7 +195,7 @@ if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
 # ==========================================
-# 3. SIDEBAR (TASARIM ESKİ HALİNE DÖNDÜ)
+# 3. SIDEBAR (TAMAMEN ESKİ HALİNE DÖNDÜ)
 # ==========================================
 with st.sidebar:
     # A) LOGO VE LİNK
@@ -212,7 +212,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     st.markdown("---")
 
-    # B) SEÇİM ARAÇLARI (SIDEBAR'A GERİ GELDİ)
+    # B) SEÇİM ARAÇLARI (SOL TARAFA SABİTLENDİ)
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
 
     # Fiyat Başlatma/Güncelleme Mantığı
@@ -234,7 +234,7 @@ with st.sidebar:
         plaka_secenekleri = {"100x200 cm": (1000, 2000), "150x300 cm": (1500, 3000), "150x600 cm": (1500, 6000)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
 
-    # C) BİLGİ KUTULARI (SIDEBAR'A GERİ GELDİ)
+    # C) BİLGİ KUTULARI (SOL TARAFA SABİTLENDİ)
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
@@ -258,25 +258,27 @@ with st.sidebar:
         
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # D) YÖNETİCİ AYARI (GECİKME DÜZELTİLMİŞ HALDE)
+    # D) YÖNETİCİ AYARI (GECİKME DÜZELTİLDİ - DİREKT KEY BAĞLANTISI)
     with st.expander("Yönetici Ayarı (Birim Fiyat)"):
          st.number_input(
              "Manuel Fiyat (TL)", 
              min_value=0.0, 
              step=1.0, 
              format="%g", 
-             key="kg_input_field" # Doğrudan anahtara bağlı, gecikme yok
+             key="kg_input_field" 
          )
 
 # ==========================================
 # 4. ANA PANEL (İÇERİK)
 # ==========================================
 
-# --- MOBİL DOSTU BAŞLIK (Sidebar kapalıyken görünsün diye buraya ekledik) ---
+# --- ÜST BAŞLIK (MOBİLDE LOGO GÖRÜNMESİ İÇİN) ---
+# Sidebar masaüstünde iyidir ama mobilde gizlenir.
+# Bu başlık, mobilden girenlerin markayı görmesini sağlar.
 col_main_logo, col_main_text = st.columns([1, 5])
 with col_main_logo:
     try:
-        st.image("logo.png", width=70)
+        st.image("logo.png", width=80)
     except:
         pass
 with col_main_text:
@@ -290,6 +292,7 @@ st.divider()
 if st.session_state.sayfa == 'anasayfa':
     st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
     
+    # Sekmeler Ana Ekranda (Eski tasarım mantığı)
     tab1, tab2, tab3 = st.tabs(["📸 FOTOĞRAF", "📐 DXF ÇİZİM", "🛠 MANUEL"])
     
     with tab1:
