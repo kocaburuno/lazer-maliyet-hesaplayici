@@ -221,13 +221,52 @@ if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
 # ==========================================
-# 3. ANA PANEL (INPUTLAR)
-# (Sidebar verileri buna bağlı olduğu için önce burası çalışmalı)
+# 3. SIDEBAR (SADECE YÖNETİCİ AYARI)
 # ==========================================
-st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
+# Logo ve Bilgi Kutularını buradan çıkardık çünkü mobilde görünmüyordu.
+with st.sidebar:
+    st.markdown("### Yönetici Paneli")
+    with st.expander("Birim Fiyatı Değiştir"):
+         # Doğrudan ana key ile bağlı
+         st.number_input(
+             "Manuel Fiyat (TL)", 
+             min_value=0.0, 
+             step=1.0, 
+             format="%g", 
+             key="kg_input_field"
+         )
 
-st.markdown("### ⚙️ Malzeme ve Üretim Ayarları")
+# ==========================================
+# 4. ANA SAYFA & HİBRİT AYAR MENÜSÜ
+# ==========================================
+
+# --- A) LOGO VE LİNK ALANI (ARTIK ANA EKRANDA) ---
+col_logo, col_link = st.columns([1, 4])
+with col_logo:
+    try:
+        st.image("logo.png", width=100)
+    except:
+        st.markdown("## ALAN")
+with col_link:
+    st.markdown(
+        """
+        <div style='text-align: left; padding-top: 15px;'>
+            <a href='https://www.alanlazer.com' target='_blank' 
+               style='text-decoration: none; color: #1C3768; font-size: 24px; font-weight: 300; letter-spacing: 1.5px; font-family: "Segoe UI Semilight", "Segoe UI", sans-serif;'>
+                alanlazer.com
+            </a>
+            <div style='font-size: 12px; color: #666;'>AI Destekli Profesyonel Analiz</div>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
+st.divider()
+
+# --- B) AYARLAR VE KUTUCUKLAR (MOBİL UYUMLU) ---
+st.markdown("### ⚙️ Üretim Ayarları")
 with st.container():
+    # 1. Satır: Seçimler
     c_h1, c_h2, c_h3 = st.columns(3)
     
     with c_h1:
@@ -244,7 +283,7 @@ with st.container():
     with c_h3:
         adet = st.number_input("3. Adet", min_value=1, value=1, step=1)
 
-    # HESAPLAMALAR (Sidebar'a veri göndermek için)
+    # Hesaplamalar
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
@@ -254,62 +293,27 @@ with st.container():
         plaka_secenekleri = {"100x200 cm": (1000, 2000), "150x300 cm": (1500, 3000), "150x600 cm": (1500, 6000)}
     secilen_plaka_adi = list(plaka_secenekleri.keys())[0]
 
-# ==========================================
-# 4. SIDEBAR (REVİZE EDİLDİ: GECİKME DÜZELTİLDİ)
-# ==========================================
-with st.sidebar:
-    try:
-        st.image("logo.png", use_column_width=True)
-    except:
-        st.markdown("<h2 style='text-align: center; color: #1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
+    # 2. Satır: Hız ve Fiyat Bilgi Kutuları (ARTIK ANA EKRANDA)
+    # Mobilde görünmesi için Sidebar'dan buraya taşıdık.
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_info1, col_info2 = st.columns(2)
     
-    # Link Alanı
-    st.markdown(
-        """
-        <div style='text-align: center; margin-top: -10px; margin-bottom: 25px;'>
-            <a href='https://www.alanlazer.com' target='_blank' 
-               style='text-decoration: none; color: #1C3768; font-size: 22px; font-weight: 300; letter-spacing: 1.5px; font-family: "Segoe UI Semilight", "Segoe UI", sans-serif;'>
-                alanlazer.com
-            </a>
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    st.markdown("---")
-    
-    # Hız ve Fiyat Kutuları (Yan Yana)
-    col_sb1, col_sb2 = st.columns(2)
-    
-    with col_sb1:
-        # Mavi Hız Kutusu
+    with col_info1:
         st.markdown(f"""
-            <div style="background-color: #e7f3fe; padding: 10px; border-radius: 8px; border-left: 4px solid #2196F3; color: #0c5460; min-height: 80px;">
-                <div style="font-size: 11px; font-weight: 600; opacity: 0.8; margin-bottom: 2px;">Hız (mm/dk)</div>
+            <div style="background-color: #e7f3fe; padding: 10px; border-radius: 8px; border-left: 4px solid #2196F3; color: #0c5460;">
+                <div style="font-size: 11px; font-weight: 600; opacity: 0.8;">Hız (mm/dk)</div>
                 <div style="font-size: 17px; font-weight: bold;">{guncel_hiz}</div>
             </div>
         """, unsafe_allow_html=True)
         
-    with col_sb2:
-        # Yeşil Fiyat Kutusu
+    with col_info2:
         guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
         st.markdown(f"""
-            <div style="background-color: #d4edda; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; color: #155724; min-height: 80px;">
-                <div style="font-size: 11px; font-weight: 600; opacity: 0.8; margin-bottom: 2px;">Birim (TL/kg)</div>
+            <div style="background-color: #d4edda; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; color: #155724;">
+                <div style="font-size: 11px; font-weight: 600; opacity: 0.8;">Birim (TL/kg)</div>
                 <div style="font-size: 17px; font-weight: bold;">{guncel_fiyat_gosterim} TL</div>
             </div>
         """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    with st.expander("Yönetici Ayarı (Birim Fiyat)"):
-         # GECİKME DÜZELTİLDİ: Doğrudan ana key kullanıldı
-         st.number_input(
-             "Manuel Fiyat (TL)", 
-             min_value=0.0, 
-             step=1.0, 
-             format="%g", 
-             key="kg_input_field"
-         )
 
 st.divider()
 
