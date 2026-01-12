@@ -44,8 +44,8 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(40, 8, "Kalinlik:", border=0)
         pdf.cell(45, 8, f"{data_dict.get('kalinlik', '-')} mm", border=1, ln=True)
         pdf.ln(1)
-        pdf.cell(40, 8, "Plaka Boyutu:", border=0)
-        pdf.cell(55, 8, f"{data_dict.get('plaka', '-')}", border=1)
+        pdf.cell(40, 8, "Bukum Sayisi:", border=0)
+        pdf.cell(55, 8, f"{data_dict.get('bukum_adedi', '0')} adet", border=1)
         pdf.cell(10, 8, "", border=0)
         pdf.cell(40, 8, "Adet:", border=0)
         pdf.cell(45, 8, f"{data_dict.get('adet', '-')}", border=1, ln=True)
@@ -58,8 +58,8 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(40, 8, "Parca Olcusu:", border=0)
         pdf.cell(55, 8, f"{data_dict.get('olcu', '-')}", border=1)
         pdf.cell(10, 8, "", border=0)
-        pdf.cell(40, 8, "Kesim Suresi:", border=0)
-        pdf.cell(45, 8, f"{data_dict.get('sure', '-')} dk", border=1, ln=True)
+        pdf.cell(40, 8, "Toplam Agirlik:", border=0)
+        pdf.cell(45, 8, f"{data_dict.get('toplam_agirlik', '-')} kg", border=1, ln=True)
         pdf.ln(1)
         pdf.cell(40, 8, "Kontur (Patlatma):", border=0)
         pdf.cell(55, 8, f"{data_dict.get('kontur', '-')} ad", border=1)
@@ -67,6 +67,20 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(40, 8, "Kesim Hizi:", border=0)
         pdf.cell(45, 8, f"{data_dict.get('hiz', '-')} mm/dk", border=1, ln=True)
         pdf.ln(10)
+        
+        # Maliyet Detayları
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 8, "  MALIYET DETAYLARI", ln=True, fill=True)
+        pdf.ln(2)
+        pdf.set_font("helvetica", "", 10)
+        pdf.cell(100, 8, "Malzeme Bedeli:", border=0)
+        pdf.cell(40, 8, f"{data_dict.get('malzeme_tutar', '-')} TL", border=0, align="R", ln=True)
+        pdf.cell(100, 8, "Lazer Isciligi:", border=0)
+        pdf.cell(40, 8, f"{data_dict.get('lazer_tutar', '-')} TL", border=0, align="R", ln=True)
+        pdf.cell(100, 8, "Bukum Isciligi:", border=0)
+        pdf.cell(40, 8, f"{data_dict.get('bukum_tutar', '-')} TL", border=0, align="R", ln=True)
+        pdf.ln(5)
+
         # Fiyat
         pdf.set_draw_color(28, 55, 104)
         pdf.set_line_width(0.5)
@@ -88,35 +102,82 @@ def generate_pdf(data_dict, image_path=None):
     except Exception as e:
         return str(e).encode()
 
-def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_bgr, metal, kalinlik, adet, guncel_hiz, plaka_adi):
-    # Sabitler
+def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_bgr, metal, kalinlik, adet, guncel_hiz, plaka_adi, bukum_adedi):
+    # --- SABİTLER ---
     DK_UCRETI = materials.DK_UCRETI
     FIRE_ORANI = materials.FIRE_ORANI
     KDV_ORANI = materials.KDV_ORANI
     
+    # --- GİRDİLER ---
     kg_fiyat = st.session_state.get('kg_input_field', 0.0)
+    bukum_baz_fiyat_manual = st.session_state.get('bukum_baz_input', 0.0)
     p_suresi = materials.PIERCING_SURELERI.get(kalinlik, 1.0)
     
-    # Hesaplama
-    sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * p_suresi / 60)
-    agirlik = (alan_mm2 * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6) * FIRE_ORANI
-    fiyat = (sure_dk * DK_UCRETI) + (agirlik * adet * kg_fiyat)
-    kdvli_fiyat = fiyat * KDV_ORANI
+    # --- 1. AĞIRLIK HESABI ---
+    # Tek parça ağırlığı
+    tek_agirlik = (alan_mm2 * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6)
+    # Toplam fireli ağırlık (Fiyatlandırma için)
+    toplam_agirlik_fireli = tek_agirlik * adet * FIRE_ORANI
+    # Toplam net ağırlık (100kg limiti kontrolü için net ağırlığa bakılır veya fireliye bakılır, genelde fireliye bakılır)
+    limit_kontrol_agirligi = toplam_agirlik_fireli 
 
-    # Gösterim
+    # --- 2. MALZEME & LAZER HESABI ---
+    sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * p_suresi / 60)
+    
+    malzeme_tutar = toplam_agirlik_fireli * kg_fiyat
+    lazer_tutar = sure_dk * DK_UCRETI
+    
+    # --- 3. BÜKÜM HESABI (YENİ) ---
+    bukum_tutar = 0.0
+    aktif_bukum_baz_fiyat = bukum_baz_fiyat_manual # Varsayılan olarak manueli al
+    
+    if bukum_adedi > 0:
+        # Kural: Malzeme ağırlığı 100 kg'ı geçerse baz fiyat 30 TL olur.
+        if limit_kontrol_agirligi > 100:
+            aktif_bukum_baz_fiyat = 30.0
+        
+        # Kural: 1. büküm 100, 2. büküm 150 (%50 artış), 3. büküm 225 (%50 artış)
+        # Formül: BazFiyat * (1.5 ^ (BükümSayisi - 1))
+        # Örnek: 1 büküm -> 100 * (1.5^0) = 100
+        # Örnek: 2 büküm -> 100 * (1.5^1) = 150
+        # Örnek: 3 büküm -> 100 * (1.5^2) = 225
+        
+        carpan = 1.5 ** (bukum_adedi - 1)
+        # Fiyatlandırma kg başınadır
+        bukum_tutar = limit_kontrol_agirligi * aktif_bukum_baz_fiyat * carpan
+
+    # --- TOPLAM ---
+    toplam_fiyat = malzeme_tutar + lazer_tutar + bukum_tutar
+    kdvli_fiyat = toplam_fiyat * KDV_ORANI
+
+    # --- GÖSTERİM (UI) ---
     st.markdown("### 📋 Teklif Özeti")
     c1, c2 = st.columns([1, 1])
+    
     with c1:
         st.markdown(f"""<div class="analiz-bilgi-kutu">
             <div class="analiz-bilgi-satir">Ölçü: <span class="analiz-bilgi-deger">{round(w_real, 1)} x {round(h_real, 1)} mm</span></div>
-            <div class="analiz-bilgi-satir">Süre: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
-            <div class="analiz-bilgi-satir">⚙️ Kontur (Piercing): <span class="analiz-bilgi-deger">{kontur_ad * adet} ad</span></div>
+            <div class="analiz-bilgi-satir">Toplam Ağırlık: <span class="analiz-bilgi-deger">{round(limit_kontrol_agirligi, 2)} kg</span></div>
+            <div class="analiz-bilgi-satir">Kesim Süresi: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
+            <div class="analiz-bilgi-satir">Büküm Sayısı: <span class="analiz-bilgi-deger">{bukum_adedi} adet</span></div>
         </div>""", unsafe_allow_html=True)
+        
     with c2:
+        # Detaylı Fiyat Dökümü
         st.markdown(f"""<div class="analiz-bilgi-kutu">
-            <div class="analiz-bilgi-satir" style="color: #31333F; font-weight: 600; text-transform: uppercase;">KDV HARİÇ</div>
-            <div style="font-size: 28px; font-weight: bold; color: #1C3768; margin-bottom: 8px;">{round(fiyat, 2)} TL</div>
-            <div style="background-color: #dcfce7; color: #166534; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 20px; border-left: 5px solid #166534;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:14px; color:#555;">
+                <span>Malzeme:</span> <span style="font-weight:bold;">{round(malzeme_tutar, 2)} TL</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:14px; color:#555;">
+                <span>Lazer İşç.:</span> <span style="font-weight:bold;">{round(lazer_tutar, 2)} TL</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px; color:#555; border-bottom:1px solid #ddd; padding-bottom:4px;">
+                <span>Büküm İşç.:</span> <span style="font-weight:bold;">{round(bukum_tutar, 2)} TL</span>
+            </div>
+            <div style="font-size: 24px; font-weight: bold; color: #1C3768; margin-bottom: 5px; text-align:right;">
+                {round(toplam_fiyat, 2)} TL <span style="font-size:12px; font-weight:normal;">(KDV Hariç)</span>
+            </div>
+            <div style="background-color: #dcfce7; color: #166534; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 18px; border-left: 5px solid #166534; text-align:center;">
                 KDV DAHİL: {round(kdvli_fiyat, 2)} TL
             </div>
         </div>""", unsafe_allow_html=True)
@@ -130,7 +191,13 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
                 "metal": metal, "kalinlik": kalinlik, "adet": adet, 
                 "plaka": plaka_adi, "olcu": f"{round(w_real,1)}x{round(h_real,1)}", 
                 "sure": round(sure_dk,2), "kontur": kontur_ad * adet, 
-                "hiz": guncel_hiz, "fiyat_haric": round(fiyat,2), 
+                "hiz": guncel_hiz, 
+                "malzeme_tutar": round(malzeme_tutar,2),
+                "lazer_tutar": round(lazer_tutar,2),
+                "bukum_tutar": round(bukum_tutar,2),
+                "bukum_adedi": bukum_adedi,
+                "toplam_agirlik": round(limit_kontrol_agirligi, 2),
+                "fiyat_haric": round(toplam_fiyat,2), 
                 "fiyat_dahil": round(kdvli_fiyat,2)
             }
             pdf_bytes = generate_pdf(pdf_data, image_path=tmp_img.name)
@@ -195,7 +262,7 @@ if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
 # ==========================================
-# 3. SIDEBAR (KÜÇÜLTÜLMÜŞ KUTUCUKLAR)
+# 3. SIDEBAR (BÜKÜM DAHİL EDİLDİ)
 # ==========================================
 with st.sidebar:
     # A) LOGO VE LİNK
@@ -215,7 +282,7 @@ with st.sidebar:
     # B) SEÇİM ARAÇLARI
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
 
-    # Fiyat Başlatma/Güncelleme Mantığı
+    # Fiyat Başlatma/Güncelleme Mantığı (Malzeme)
     secilen_metalin_fiyati = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
     if 'last_metal' not in st.session_state or st.session_state.last_metal != metal:
         st.session_state.kg_input_field = secilen_metalin_fiyati
@@ -227,6 +294,9 @@ with st.sidebar:
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
     
+    # Yeni: Büküm Sayısı Girdisi
+    bukum_adedi = st.number_input("Büküm Sayısı (Parça Başı)", min_value=0, value=0, step=1)
+
     # Plaka Seçimi
     if 0.8 <= kalinlik <= 1.5:
         plaka_secenekleri = {"100x200 cm": (1000, 2000), "150x300 cm": (1500, 3000)}
@@ -234,15 +304,31 @@ with st.sidebar:
         plaka_secenekleri = {"100x200 cm": (1000, 2000), "150x300 cm": (1500, 3000), "150x600 cm": (1500, 6000)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
 
-    # C) BİLGİ KUTULARI (BOYUTLAR KÜÇÜLTÜLDÜ)
+    # --- C) BİLGİ KUTULARI ---
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
     
+    # Büküm Baz Fiyat Hesaplama (Kalınlığa Göre Varsayılan)
+    default_bukum_baz = 0.0
+    if 0.8 <= kalinlik < 2.0: default_bukum_baz = 100.0
+    elif 2.0 <= kalinlik < 5.0: default_bukum_baz = 80.0
+    elif 5.0 <= kalinlik < 6.0: default_bukum_baz = 60.0
+    elif 6.0 <= kalinlik <= 10.0: default_bukum_baz = 40.0
+    else: default_bukum_baz = 100.0 # Varsayılan
+
+    # Session State yönetimi (Büküm Baz Fiyat için)
+    # Kalınlık değiştiğinde varsayılana dönmeli
+    if 'last_kalinlik' not in st.session_state or st.session_state.last_kalinlik != kalinlik:
+        st.session_state.bukum_baz_input = default_bukum_baz
+        st.session_state.last_kalinlik = kalinlik
+    
+    guncel_bukum_baz = st.session_state.get('bukum_baz_input', default_bukum_baz)
+
     st.markdown("<br>", unsafe_allow_html=True)
     col_i1, col_i2 = st.columns(2)
     
-    # Mavi Hız Kutusu (Padding 15->10, Font 24->18)
+    # Mavi Hız Kutusu
     with col_i1:
         st.markdown(f"""
             <div style="background-color: #e7f3fe; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3; color: #0c5460; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
@@ -251,7 +337,7 @@ with st.sidebar:
             </div>
         """, unsafe_allow_html=True)
         
-    # Yeşil Fiyat Kutusu (Padding 15->10, Font 24->18)
+    # Yeşil Fiyat Kutusu
     with col_i2:
         st.markdown(f"""
             <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; border-left: 4px solid #28a745; color: #155724; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
@@ -259,18 +345,25 @@ with st.sidebar:
                 <div style="font-size: 18px; font-weight: 800;">{guncel_fiyat_gosterim} TL</div>
             </div>
         """, unsafe_allow_html=True)
-        
+    
+    # Turuncu Büküm Fiyat Kutusu (Yeni)
+    st.markdown(f"""
+        <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; color: #856404; box-shadow: 0px 2px 4px rgba(0,0,0,0.1); margin-top:10px;">
+            <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Büküm Baz (TL/kg)</div>
+            <div style="font-size: 18px; font-weight: 800;">{guncel_bukum_baz} TL</div>
+            <div style="font-size: 9px; opacity:0.8;">(100kg üstü: 30 TL)</div>
+        </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # D) YÖNETİCİ AYARI
-    with st.expander("Yönetici Ayarı (Birim Fiyat)"):
-         st.number_input(
-             "Manuel Fiyat (TL)", 
-             min_value=0.0, 
-             step=1.0, 
-             format="%g", 
-             key="kg_input_field" 
-         )
+    # D) YÖNETİCİ AYARI (Genişletildi)
+    with st.expander("Yönetici Ayarları"):
+         st.write("Malzeme Fiyatı:")
+         st.number_input("Manuel Sac Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="kg_input_field")
+         st.markdown("---")
+         st.write("Büküm Baz Fiyatı:")
+         st.number_input("Manuel Büküm Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="bukum_baz_input")
 
 # ==========================================
 # 4. ANA PANEL (İÇERİK - LOGOSUZ)
@@ -360,7 +453,7 @@ elif st.session_state.sayfa == 'foto_analiz':
                 alan_mm2 = cv2.contourArea(all_pts) * (oran**2)
                 
                 hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, gercek_genislik, gercek_yukseklik, display_img,
-                                  metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi)
+                                  metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
             else:
                 st.warning("Kesim yolu bulunamadı.")
         else:
@@ -426,7 +519,7 @@ elif st.session_state.sayfa == 'dxf_analiz':
                     alan_mm2 = w_real * h_real
                     
                     hesapla_ve_goster(kesim_m, piercing_basi, alan_mm2, w_real, h_real, result_img,
-                                      metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi)
+                                      metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
             else:
                 st.warning("DXF boş.")
         except Exception as e:
@@ -477,4 +570,4 @@ elif st.session_state.sayfa == 'hazir_parca':
         st.image(canvas_rgb, caption=f"Önizleme: {w_r}x{h_r}mm", use_container_width=True)
         canvas_bgr = cv2.cvtColor(canvas_rgb, cv2.COLOR_RGB2BGR)
         hesapla_ve_goster(toplam_kesim_mm/1000, piercing, net_alan_mm2, w_r, h_r, canvas_bgr,
-                          metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi)
+                          metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
