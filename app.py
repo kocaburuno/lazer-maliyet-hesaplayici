@@ -195,7 +195,7 @@ if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
 # ==========================================
-# 3. SIDEBAR (LOGOLU, ORİJİNAL YERLEŞİM)
+# 3. SIDEBAR (KÜÇÜLTÜLMÜŞ KUTUCUKLAR)
 # ==========================================
 with st.sidebar:
     # A) LOGO VE LİNK
@@ -234,7 +234,7 @@ with st.sidebar:
         plaka_secenekleri = {"100x200 cm": (1000, 2000), "150x300 cm": (1500, 3000), "150x600 cm": (1500, 6000)}
     secilen_plaka_adi = st.selectbox("Plaka Boyutu", list(plaka_secenekleri.keys()))
 
-    # C) BİLGİ KUTULARI (MODERN VE BELİRGİN TASARIM)
+    # C) BİLGİ KUTULARI (BOYUTLAR KÜÇÜLTÜLDÜ)
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
@@ -242,21 +242,21 @@ with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
     col_i1, col_i2 = st.columns(2)
     
-    # Mavi Hız Kutusu
+    # Mavi Hız Kutusu (Padding 15->10, Font 24->18)
     with col_i1:
         st.markdown(f"""
-            <div style="background-color: #e7f3fe; padding: 15px; border-radius: 10px; border-left: 5px solid #2196F3; color: #0c5460; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Hız (mm/dk)</div>
-                <div style="font-size: 24px; font-weight: 800;">{guncel_hiz}</div>
+            <div style="background-color: #e7f3fe; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3; color: #0c5460; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
+                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Hız (mm/dk)</div>
+                <div style="font-size: 18px; font-weight: 800;">{guncel_hiz}</div>
             </div>
         """, unsafe_allow_html=True)
         
-    # Yeşil Fiyat Kutusu
+    # Yeşil Fiyat Kutusu (Padding 15->10, Font 24->18)
     with col_i2:
         st.markdown(f"""
-            <div style="background-color: #d4edda; padding: 15px; border-radius: 10px; border-left: 5px solid #28a745; color: #155724; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);">
-                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Birim (TL/kg)</div>
-                <div style="font-size: 24px; font-weight: 800;">{guncel_fiyat_gosterim} TL</div>
+            <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; border-left: 4px solid #28a745; color: #155724; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
+                <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Birim (TL/kg)</div>
+                <div style="font-size: 18px; font-weight: 800;">{guncel_fiyat_gosterim} TL</div>
             </div>
         """, unsafe_allow_html=True)
         
@@ -273,17 +273,15 @@ with st.sidebar:
          )
 
 # ==========================================
-# 4. ANA PANEL (İÇERİK - LOGOSUZ/SADE)
+# 4. ANA PANEL (İÇERİK - LOGOSUZ)
 # ==========================================
 
 st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
-# Main area logo/link kısmı kaldırıldı, sadece başlık var.
 
 if st.session_state.sayfa == 'anasayfa':
     st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
     st.divider()
     
-    # 3 Sekmeli Yapı
     tab1, tab2, tab3 = st.tabs(["📸 FOTOĞRAF", "📐 DXF ÇİZİM", "🛠 MANUEL"])
     
     with tab1:
