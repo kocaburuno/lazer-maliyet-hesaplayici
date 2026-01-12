@@ -227,8 +227,8 @@ with st.sidebar:
     # 1. Metal, Kalınlık ve Adet Seçimi
     metal = st.selectbox("Metal Türü", list(materials.VERİ.keys()))
 
-    # --- FİYAT BAŞLATMA VE GÜNCELLEME MANTIĞI (DÜZELTİLDİ) ---
-    # Seçilen metalin varsayılan fiyatını çekiyoruz
+    # --- FİYAT GÜNCELLEME VE BAŞLATMA MANTIĞI ---
+    # Seçilen metalin varsayılan fiyatını veriden çek
     secilen_metalin_fiyati = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
 
     # KURAL: Eğer sistem ilk kez açılıyorsa ('last_metal' yoksa) 
@@ -240,39 +240,24 @@ with st.sidebar:
         # 2. Geçici fiyat değişkenini güncelle
         st.session_state.temp_kg_fiyat = secilen_metalin_fiyati
         
-        # 3. Son seçilen metali kaydet
+        # 3. Son seçilen metali kaydet ki döngüye girmesin
         st.session_state.last_metal = metal
-    # ---------------------------------------------------------
-
+    # ---------------------------------------------
+    
     col_s1, col_s2 = st.columns(2)
     with col_s1:
-        kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
-    with col_s2:
-        adet = st.number_input("Adet", min_value=1, value=1, step=1)
-            
-        # 4. Son metal bilgisini güncelle
-        st.session_state.last_metal = metal
-        
-    # Eğer değişken hiç yoksa (ilk yükleme garanitisi)
-    if 'temp_kg_fiyat' not in st.session_state:
-        st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
-    # --- FİYAT GÜNCELLEME MANTIĞI (BİTİŞ) ---
-
-    col_s1, col_s2 = st.columns(2)
-    with col_s1:
+        # HATA VEREN KISIM BURASIYDI - ARTIK TEK SEFER YAZILIYOR
         kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
     with col_s2:
         adet = st.number_input("Adet", min_value=1, value=1, step=1)
 
-    # 2. Plaka Seçenekleri Mantığı (Tüm Malzemeler İçin Ortak 0.8-1.5mm Kuralı)
+    # 2. Plaka Seçenekleri Mantığı
     if 0.8 <= kalinlik <= 1.5:
-        # İnce Malzemeler: 125x250 seçeneği var, 6 metre yok
         plaka_secenekleri = {
             "100x200 cm": (1000, 2000),   
             "150x300 cm": (1500, 3000)
         }
     else:
-        # Kalın Malzemeler (2mm+): 125x250 kalkar, 6 metre gelir
         plaka_secenekleri = {
             "100x200 cm": (1000, 2000), 
             "150x300 cm": (1500, 3000), 
@@ -285,10 +270,7 @@ with st.sidebar:
     hiz_tablosu = materials.VERİ[metal]["hizlar"]
     guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
     
-    if 'temp_kg_fiyat' not in st.session_state:
-        st.session_state.temp_kg_fiyat = float(materials.VARSAYILAN_FIYATLAR.get(metal, 29.0))
-
-    st.markdown("<br>", unsafe_allow_html=True) # Küçük bir boşluk
+    st.markdown("<br>", unsafe_allow_html=True)
 
     col_i1, col_i2 = st.columns(2)
     with col_i1:
@@ -300,11 +282,12 @@ with st.sidebar:
             </div>
         """, unsafe_allow_html=True)
     with col_i2:
-        # Yeşil Kutu: Birim Fiyat
+        # Yeşil Kutu: Birim Fiyat (Session State'ten gelir)
+        guncel_fiyat_gosterim = st.session_state.kg_input_field
         st.markdown(f"""
             <div style="background-color: #d4edda; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; color: #155724; min-height: 70px;">
                 <div style="font-size: 11px; font-weight: 600; opacity: 0.8; margin-bottom: 2px;">Birim(TL/kg)</div>
-                <div style="font-size: 17px; font-weight: bold;">{st.session_state.temp_kg_fiyat} TL</div>
+                <div style="font-size: 17px; font-weight: bold;">{guncel_fiyat_gosterim} TL</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -313,11 +296,12 @@ with st.sidebar:
     # --- 4. MALZEME KG FİYATI GİRİŞİ ---
     kg_fiyati = st.number_input(
         "Malzeme KG Fiyatı (TL)", 
-        min_value=0.0,  
+        min_value=0.0, 
         step=1.0, 
         format="%g",
-        key="kg_input_field"
+        key="kg_input_field" # Value parametresi yok, key üzerinden otomatik alıyor
     )
+    # Değişkeni güncelle (Manuel değişiklikler için)
     st.session_state.temp_kg_fiyat = kg_fiyati
 
 # --- 6. ANA PANEL İÇERİĞİ ---
