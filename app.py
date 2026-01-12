@@ -7,7 +7,7 @@ import tempfile
 import os
 
 # --- HARİCİ VERİ DOSYASINDAN OKUMA ---
-import materials
+import materials 
 
 from fpdf import FPDF
 
@@ -17,7 +17,7 @@ from fpdf import FPDF
 try:
     fav_icon = Image.open("tarayici.png")
 except:
-    fav_icon = None
+    fav_icon = None 
 
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
@@ -29,7 +29,7 @@ st.markdown("""
         /* Genel Ayarlar */
         section[data-testid="stSidebar"] div.block-container { padding-top: 1rem; }
         div.stButton > button { min-height: 50px; }
-
+        
         /* Analiz Kutuları */
         .analiz-bilgi-kutu {
             background-color: #f8f9fa; border-radius: 8px; padding: 12px;
@@ -37,17 +37,23 @@ st.markdown("""
         }
         .analiz-bilgi-satir { font-size: 0.9rem; color: #555; margin-bottom: 5px; line-height: 1.4; }
         .analiz-bilgi-deger { font-weight: bold; color: #111; }
-
+        
         /* Floating Button (PDF) */
         .floating-pdf-container {
             position: fixed; bottom: 30px; right: 30px; z-index: 9999;
             background-color: #ffffff; padding: 15px; border-radius: 12px;
             box-shadow: 0px 4px 15px rgba(0,0,0,0.2); border-top: 4px solid #1C3768; width: 250px;
         }
-
-        /* SCROLLBAR GİZLEME */
+        
+        /* SCROLLBAR GİZLEME (Sidebar ve Ana Sayfa) */
         section[data-testid="stSidebar"] ::-webkit-scrollbar { display: none; }
         section[data-testid="stSidebar"] { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* LANDING PAGE GÖRSEL ORTALAMA */
+        [data-testid="stImage"] {
+            display: flex;
+            justify-content: center;
+        }
 
         /* LANDING PAGE KARTLARI */
         .landing-card {
@@ -143,7 +149,7 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(40, 8, "Kesim Hizi:", border=0)
         pdf.cell(45, 8, f"{data_dict.get('hiz', '-')} mm/dk", border=1, ln=True)
         pdf.ln(10)
-
+        
         # Maliyet Detayları
         pdf.set_font("helvetica", "B", 12)
         pdf.cell(0, 8, "  MALIYET DETAYLARI", ln=True, fill=True)
@@ -182,27 +188,27 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     DK_UCRETI = materials.DK_UCRETI
     FIRE_ORANI = materials.FIRE_ORANI
     KDV_ORANI = materials.KDV_ORANI
-
+    
     kg_fiyat = st.session_state.get('kg_input_field', 0.0)
     bukum_baz_fiyat_manual = st.session_state.get('bukum_baz_input', 0.0)
     p_suresi = materials.PIERCING_SURELERI.get(kalinlik, 1.0)
-
+    
     tek_agirlik = (alan_mm2 * kalinlik * materials.VERİ[metal]["ozkutle"] / 1e6)
     toplam_agirlik_fireli = tek_agirlik * adet * FIRE_ORANI
-    limit_kontrol_agirligi = toplam_agirlik_fireli
+    limit_kontrol_agirligi = toplam_agirlik_fireli 
 
     sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * p_suresi / 60)
-
+    
     malzeme_tutar = toplam_agirlik_fireli * kg_fiyat
     lazer_tutar = sure_dk * DK_UCRETI
-
+    
     bukum_tutar = 0.0
     aktif_bukum_baz_fiyat = bukum_baz_fiyat_manual
-
+    
     if bukum_adedi > 0:
         if limit_kontrol_agirligi > materials.BUKUM_TOPTAN_LIMIT_KG:
             aktif_bukum_baz_fiyat = materials.BUKUM_TOPTAN_FIYAT
-
+        
         carpan = 1.5 ** (bukum_adedi - 1)
         bukum_tutar = limit_kontrol_agirligi * aktif_bukum_baz_fiyat * carpan
 
@@ -211,7 +217,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
 
     st.markdown("### 📋 Teklif Özeti")
     c1, c2 = st.columns([1, 1])
-
+    
     with c1:
         st.markdown(f"""<div class="analiz-bilgi-kutu">
             <div class="analiz-bilgi-satir">Ölçü: <span class="analiz-bilgi-deger">{round(w_real, 1)} x {round(h_real, 1)} mm</span></div>
@@ -219,7 +225,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
             <div class="analiz-bilgi-satir">Kesim Süresi: <span class="analiz-bilgi-deger">{round(sure_dk, 2)} dk</span></div>
             <div class="analiz-bilgi-satir">Büküm Sayısı: <span class="analiz-bilgi-deger">{bukum_adedi} adet</span></div>
         </div>""", unsafe_allow_html=True)
-
+        
     with c2:
         st.markdown(f"""<div class="analiz-bilgi-kutu">
             <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:14px; color:#555;">
@@ -244,23 +250,23 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_img:
             cv2.imwrite(tmp_img.name, result_img_bgr)
             pdf_data = {
-                "metal": metal, "kalinlik": kalinlik, "adet": adet,
-                "plaka": plaka_adi, "olcu": f"{round(w_real,1)}x{round(h_real,1)}",
-                "sure": round(sure_dk,2), "kontur": kontur_ad * adet,
-                "hiz": guncel_hiz,
+                "metal": metal, "kalinlik": kalinlik, "adet": adet, 
+                "plaka": plaka_adi, "olcu": f"{round(w_real,1)}x{round(h_real,1)}", 
+                "sure": round(sure_dk,2), "kontur": kontur_ad * adet, 
+                "hiz": guncel_hiz, 
                 "malzeme_tutar": round(malzeme_tutar,2),
                 "lazer_tutar": round(lazer_tutar,2),
                 "bukum_tutar": round(bukum_tutar,2),
                 "bukum_adedi": bukum_adedi,
                 "toplam_agirlik": round(limit_kontrol_agirligi, 2),
-                "fiyat_haric": round(toplam_fiyat,2),
+                "fiyat_haric": round(toplam_fiyat,2), 
                 "fiyat_dahil": round(kdvli_fiyat,2)
             }
             pdf_bytes = generate_pdf(pdf_data, image_path=tmp_img.name)
         os.unlink(tmp_img.name)
     except:
         pass
-
+        
     st.markdown('<div class="floating-pdf-container">📄 <b>Teklif Hazır</b>', unsafe_allow_html=True)
     if pdf_bytes:
         st.download_button("PDF İndir", data=pdf_bytes, file_name="Teklif.pdf", mime="application/pdf", use_container_width=True)
@@ -289,6 +295,73 @@ if 'app_mode' not in st.session_state:
 if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
+def landing_page():
+    # 1. Üst Boşluk
+    st.write("")
+    st.write("")
+
+    # 2. MERKEZİ YAPI (Sol Boşluk - İçerik - Sağ Boşluk)
+    # [1, 0.8, 1] oranı ile içerik tam ortada ve kompakt durur.
+    col_left, col_center, col_right = st.columns([1, 0.8, 1]) 
+    
+    with col_center:
+        # A) LOGO (HTML yerine Streamlit image kullanıldı - Hata çözümü)
+        try:
+            st.image("logo.png", width=220) 
+        except:
+            st.markdown("<h1 style='text-align: center; color: #1C3768;'>ALAN LAZER</h1>", unsafe_allow_html=True)
+        
+        # B) LINK (Sidebar stiliyle aynı)
+        st.markdown("""
+            <div style='text-align: center; margin-top: 5px; margin-bottom: 25px;'>
+                <a href='https://www.alanlazer.com' target='_blank' 
+                   style='text-decoration: none; color: #1C3768; font-size: 22px; font-weight: 300;'>alanlazer.com</a>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    # 3. Ayırıcı ve Başlık
+    st.divider()
+    st.markdown("<h1 style='text-align: center; color: #1C3768; margin-bottom: 40px;'>Profesyonel Lazer ve Büküm Maliyet Analizi</h1>", unsafe_allow_html=True)
+    
+    # 4. Bilgi Kartları
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="landing-card">
+            <div class="landing-icon">📸</div>
+            <div class="landing-title">1. Yükle & Çek</div>
+            <div class="landing-text">Parçanın fotoğrafını çekin, dosyasını yükleyin veya DXF çizimini ekleyin.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown("""
+        <div class="landing-card">
+            <div class="landing-icon">⚙️</div>
+            <div class="landing-title">2. Yapılandır</div>
+            <div class="landing-text">Malzeme türünü, kalınlığını seçin ve büküm adetlerini girin.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col3:
+        st.markdown("""
+        <div class="landing-card">
+            <div class="landing-icon">📄</div>
+            <div class="landing-title">3. Sonuç Al</div>
+            <div class="landing-text">Saniyeler içinde detaylı maliyet analizini ve PDF teklif formunu indirin.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    # 5. Başla Butonu (Ortalanmış)
+    c_btn1, c_btn2, c_btn3 = st.columns([1, 2, 1])
+    with c_btn2:
+        if st.button("ANALİZE BAŞLA", use_container_width=True, type="primary"):
+            st.session_state.app_mode = 'app'
+            st.rerun()
+
 def main_app():
     # --- SIDEBAR (SADECE UYGULAMA MODUNDA GÖRÜNÜR) ---
     with st.sidebar:
@@ -296,10 +369,10 @@ def main_app():
             st.image("logo.png", use_column_width=True)
         except:
             st.markdown("<h2 style='text-align: center; color: #1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
-
+        
         st.markdown("""
             <div style='text-align: center; margin-top: -10px; margin-bottom: 25px;'>
-                <a href='https://www.alanlazer.com' target='_blank'
+                <a href='https://www.alanlazer.com' target='_blank' 
                    style='text-decoration: none; color: #1C3768; font-size: 20px; font-weight: 300;'>alanlazer.com</a>
             </div>
         """, unsafe_allow_html=True)
@@ -317,7 +390,7 @@ def main_app():
             kalinlik = st.selectbox("Kalınlık (mm)", materials.VERİ[metal]["kalinliklar"])
         with col_s2:
             adet = st.number_input("Adet", min_value=1, value=1, step=1)
-
+        
         bukum_adedi = st.number_input("Büküm Sayısı (Parça Başı)", min_value=0, value=0, step=1)
 
         if 0.8 <= kalinlik <= 1.5:
@@ -329,7 +402,7 @@ def main_app():
         hiz_tablosu = materials.VERİ[metal]["hizlar"]
         guncel_hiz = hiz_tablosu.get(kalinlik, 1000)
         guncel_fiyat_gosterim = st.session_state.get('kg_input_field', 0)
-
+        
         default_bukum_baz = materials.BUKUM_F_STANDART
         if 0.8 <= kalinlik < 2.0: default_bukum_baz = materials.BUKUM_F_0_2_MM
         elif 2.0 <= kalinlik < 5.0: default_bukum_baz = materials.BUKUM_F_2_5_MM
@@ -339,12 +412,12 @@ def main_app():
         if 'last_kalinlik' not in st.session_state or st.session_state.last_kalinlik != kalinlik:
             st.session_state.bukum_baz_input = default_bukum_baz
             st.session_state.last_kalinlik = kalinlik
-
+        
         guncel_bukum_baz = st.session_state.get('bukum_baz_input', default_bukum_baz)
 
         st.markdown("<br>", unsafe_allow_html=True)
         col_i1, col_i2 = st.columns(2)
-
+        
         with col_i1:
             st.markdown(f"""
                 <div style="background-color: #e7f3fe; padding: 10px; border-radius: 5px; border-left: 4px solid #2196F3; color: #0c5460; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
@@ -352,7 +425,7 @@ def main_app():
                     <div style="font-size: 18px; font-weight: 800;">{guncel_hiz}</div>
                 </div>
             """, unsafe_allow_html=True)
-
+            
         with col_i2:
             st.markdown(f"""
                 <div style="background-color: #d4edda; padding: 10px; border-radius: 5px; border-left: 4px solid #28a745; color: #155724; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
@@ -360,7 +433,7 @@ def main_app():
                     <div style="font-size: 18px; font-weight: 800;">{guncel_fiyat_gosterim} TL</div>
                 </div>
             """, unsafe_allow_html=True)
-
+        
         st.markdown(f"""
             <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; color: #856404; box-shadow: 0px 2px 4px rgba(0,0,0,0.1); margin-top:10px;">
                 <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Büküm Baz (TL/kg)</div>
@@ -384,13 +457,14 @@ def main_app():
     if st.session_state.sayfa == 'anasayfa':
         st.markdown("### Lütfen yapmak istediğiniz işlem türünü seçiniz:")
         st.divider()
-
+        
         tab1, tab2, tab3 = st.tabs(["📸 FOTOĞRAF", "📐 DXF ÇİZİM", "🛠 MANUEL"])
-
+        
         with tab1:
             st.info("Parçanın fotoğrafını çekin veya yükleyin (Fotoğraf Çek / Galeri).")
+            # SADECE FILE UPLOADER
             upl_val = st.file_uploader("Görsel Yükle", type=['jpg', 'png', 'jpeg'])
-
+            
             if upl_val:
                 st.session_state.gecici_gorsel = upl_val
                 sayfa_degistir('foto_analiz')
@@ -414,7 +488,7 @@ def main_app():
         if st.button("⬅️ Geri Dön", use_container_width=True):
             sayfa_degistir('anasayfa')
             st.rerun()
-
+        
         st.subheader("📸 Görsel Analizi")
         with st.expander("Görüntü Ayarları", expanded=True):
             col_fa1, col_fa2 = st.columns(2)
@@ -427,13 +501,13 @@ def main_app():
             file_bytes = np.asarray(bytearray(st.session_state.gecici_gorsel.read()), dtype=np.uint8)
             st.session_state.gecici_gorsel.seek(0)
             original_img = cv2.imdecode(file_bytes, 1)
-
+            
             if original_img is not None:
                 h_img, w_img = original_img.shape[:2]
                 gray = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
                 _, binary = cv2.threshold(gray, hassasiyet, 255, cv2.THRESH_BINARY_INV)
                 contours, hierarchy = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-
+                
                 valid_contour_list = []
                 if contours and hierarchy is not None:
                     for i, cnt in enumerate(contours):
@@ -441,22 +515,22 @@ def main_app():
                         if w_b > w_img * 0.96 or h_b > h_img * 0.96: continue
                         if hierarchy[0][i][3] == -1 or hierarchy[0][i][3] == 0:
                             valid_contour_list.append(cnt)
-
+                
                 if valid_contour_list:
                     all_pts = np.concatenate(valid_contour_list)
                     _, _, w_px, h_px = cv2.boundingRect(all_pts)
                     oran = referans_olcu / w_px
                     gercek_genislik = w_px * oran
                     gercek_yukseklik = h_px * oran
-
+                    
                     display_img = original_img.copy()
                     cv2.drawContours(display_img, valid_contour_list, -1, (0, 255, 0), 2)
                     st.image(cv2.cvtColor(display_img, cv2.COLOR_BGR2RGB), caption="Analiz", use_container_width=True)
-
+                    
                     kesim_m = (sum([cv2.arcLength(c, True) for c in valid_contour_list]) * oran) / 1000
                     kontur_ad = len(valid_contour_list)
                     alan_mm2 = cv2.contourArea(all_pts) * (oran**2)
-
+                    
                     hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, gercek_genislik, gercek_yukseklik, display_img,
                                       metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
                 else:
@@ -481,14 +555,14 @@ def main_app():
                 doc = ezdxf.readfile(tmp_path)
                 msp = doc.modelspace()
                 os.remove(tmp_path)
-
+                
                 try:
                     bbox_cache = bbox.extents(msp)
                     w_real = bbox_cache.extmax.x - bbox_cache.extmin.x
                     h_real = bbox_cache.extmax.y - bbox_cache.extmin.y
                 except:
                     w_real, h_real = 0, 0
-
+                
                 if w_real > 0:
                     fig = plt.figure(figsize=(10, 10), facecolor='#111827')
                     ax = fig.add_axes([0, 0, 1, 1])
@@ -503,17 +577,17 @@ def main_app():
                     width, height = fig.canvas.get_width_height()
                     img_data = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).reshape(height, width, 4)
                     plt.close(fig)
-
+                    
                     dxf_img_bgr = cv2.cvtColor(img_data, cv2.COLOR_RGBA2BGR)
                     gray = cv2.cvtColor(dxf_img_bgr, cv2.COLOR_BGR2GRAY)
                     _, binary = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
                     contours, _ = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
                     valid_cnts = [c for c in contours if cv2.contourArea(c) >= 5]
-
+                    
                     result_img = dxf_img_bgr.copy()
                     cv2.drawContours(result_img, valid_cnts, -1, (0, 255, 0), 2)
                     st.image(result_img, caption="DXF Önizleme", use_container_width=True)
-
+                    
                     if valid_cnts:
                         toplam_piksel_yol = sum([cv2.arcLength(c, True) for c in valid_cnts])
                         _, _, w_p, _ = cv2.boundingRect(np.concatenate(valid_cnts))
@@ -521,7 +595,7 @@ def main_app():
                         kesim_m = (toplam_piksel_yol * scale_ratio) / 1000.0
                         piercing_basi = len(valid_cnts)
                         alan_mm2 = w_real * h_real
-
+                        
                         hesapla_ve_goster(kesim_m, piercing_basi, alan_mm2, w_real, h_real, result_img,
                                           metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
                 else:
@@ -574,59 +648,6 @@ def main_app():
             canvas_bgr = cv2.cvtColor(canvas_rgb, cv2.COLOR_RGB2BGR)
             hesapla_ve_goster(toplam_kesim_mm/1000, piercing, net_alan_mm2, w_r, h_r, canvas_bgr,
                               metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
-
-def landing_page():
-    # DÜZENLEME: Logo, Link ve Başlık tek bir merkezi blokta
-    st.markdown("""
-        <div style='text-align: center; padding: 20px 0;'>
-            <img src='logo.png' width='200' style='display: block; margin: 0 auto;'>
-            <div style='margin-top: 10px; margin-bottom: 20px;'>
-                <a href='https://www.alanlazer.com' target='_blank'
-                   style='text-decoration: none; color: #1C3768; font-size: 20px; font-weight: 300;'>alanlazer.com</a>
-            </div>
-            <hr style='margin: 30px auto; width: 60%; border-top: 1px solid #ddd;'>
-            <h1 style='color: #1C3768; margin-bottom: 30px;'>Profesyonel Lazer ve Büküm Maliyet Analizi</h1>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # 3 Adım Kartları
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("""
-        <div class="landing-card">
-            <div class="landing-icon">📸</div>
-            <div class="landing-title">1. Yükle & Çek</div>
-            <div class="landing-text">Parçanın fotoğrafını çekin, dosyasını yükleyin veya DXF çizimini ekleyin.</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("""
-        <div class="landing-card">
-            <div class="landing-icon">⚙️</div>
-            <div class="landing-title">2. Yapılandır</div>
-            <div class="landing-text">Malzeme türünü, kalınlığını seçin ve büküm adetlerini girin.</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown("""
-        <div class="landing-card">
-            <div class="landing-icon">📄</div>
-            <div class="landing-title">3. Sonuç Al</div>
-            <div class="landing-text">Saniyeler içinde detaylı maliyet analizini ve PDF teklif formunu indirin.</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # Başla Butonu
-    c_btn1, c_btn2, c_btn3 = st.columns([1, 2, 1])
-    with c_btn2:
-        if st.button("ANALİZE BAŞLA", use_container_width=True, type="primary"):
-            st.session_state.app_mode = 'app'
-            st.rerun()
 
 # ==========================================
 # 4. UYGULAMA BAŞLATICI
