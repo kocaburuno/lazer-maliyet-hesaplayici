@@ -12,7 +12,7 @@ import materials
 from fpdf import FPDF
 
 # ==========================================
-# 0. SAYFA KONFİGÜRASYONU (EN BAŞTA OLMALI)
+# 0. SAYFA KONFİGÜRASYONU
 # ==========================================
 try:
     fav_icon = Image.open("tarayici.png")
@@ -576,17 +576,23 @@ def main_app():
                               metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
 
 def landing_page():
-    # Landing Page Header
-    c_logo, c_link = st.columns([1, 6])
-    with c_logo:
+    # Header Centering Strategy: Using columns to center the content
+    # [3, 4, 3] creates a center column that takes up 40% of the width
+    col_left, col_center, col_right = st.columns([3, 4, 3]) 
+    
+    with col_center:
+        # 1. LOGO
         try:
-            st.image("logo.png", width=60)
+            # use_column_width=True makes it fill the 'col_center' width
+            st.image("logo.png", use_column_width=True) 
         except:
-            st.write("ALAN")
-    with c_link:
+            st.markdown("<h2 style='text-align: center; color: #1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
+        
+        # 2. LINK (Sidebar style match)
         st.markdown("""
-            <div style="padding-top:10px;">
-                <a href="https://www.alanlazer.com" target="_blank" style="text-decoration:none; color:#1C3768; font-weight:bold; font-size:20px;">alanlazer.com</a>
+            <div style='text-align: center; margin-top: -10px; margin-bottom: 25px;'>
+                <a href='https://www.alanlazer.com' target='_blank' 
+                   style='text-decoration: none; color: #1C3768; font-size: 20px; font-weight: 300;'>alanlazer.com</a>
             </div>
         """, unsafe_allow_html=True)
     
