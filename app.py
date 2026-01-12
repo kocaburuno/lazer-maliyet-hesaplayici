@@ -334,7 +334,7 @@ def landing_page():
         <div class="landing-card">
             <div class="landing-icon">📸</div>
             <div class="landing-title">1. Yükle & Çek</div>
-            <div class="landing-text">Parçanın fotoğrafını çekin, DXF/ekran görüntüsü yükleyin veya hazır şablon çizimi ekleyin.</div>
+            <div class="landing-text">Parçanın fotoğrafını çekin, hazır şablon çizimi yapın veya ekran görüntüsü/DXF yükleyin.</div>
         </div>
         """, unsafe_allow_html=True)
         
