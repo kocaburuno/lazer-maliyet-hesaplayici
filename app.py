@@ -255,7 +255,7 @@ with st.container():
     secilen_plaka_adi = list(plaka_secenekleri.keys())[0]
 
 # ==========================================
-# 4. SIDEBAR (REVİZE EDİLDİ: HIZ KUTUSU + LINK)
+# 4. SIDEBAR (REVİZE EDİLDİ: GECİKME DÜZELTİLDİ)
 # ==========================================
 with st.sidebar:
     try:
@@ -263,7 +263,7 @@ with st.sidebar:
     except:
         st.markdown("<h2 style='text-align: center; color: #1C3768;'>ALAN LAZER</h2>", unsafe_allow_html=True)
     
-    # İstenilen Link Alanı
+    # Link Alanı
     st.markdown(
         """
         <div style='text-align: center; margin-top: -10px; margin-bottom: 25px;'>
@@ -302,9 +302,14 @@ with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
 
     with st.expander("Yönetici Ayarı (Birim Fiyat)"):
-         kg_fiyati_manuel = st.number_input("Manuel Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="kg_input_field_manual")
-         if kg_fiyati_manuel > 0:
-             st.session_state.kg_input_field = kg_fiyati_manuel
+         # GECİKME DÜZELTİLDİ: Doğrudan ana key kullanıldı
+         st.number_input(
+             "Manuel Fiyat (TL)", 
+             min_value=0.0, 
+             step=1.0, 
+             format="%g", 
+             key="kg_input_field"
+         )
 
 st.divider()
 
