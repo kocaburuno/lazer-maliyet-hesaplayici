@@ -158,11 +158,13 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(40, 8, f"{data_dict.get('bukum_tutar', '-')} TL", border=0, align="R", ln=True)
         pdf.ln(5)
 
-        # Fiyat
+        # Fiyat (DÜZELTME BAŞLANGICI - Yerleşim Mantığı)
+        current_y_before_box = pdf.get_y()
         pdf.set_draw_color(28, 55, 104)
         pdf.set_line_width(0.5)
-        pdf.rect(10, pdf.get_y(), 190, 35)
-        pdf.set_y(pdf.get_y() + 5)
+        pdf.rect(10, current_y_before_box, 190, 35) # Kutu çiziliyor
+        
+        pdf.set_y(current_y_before_box + 5)
         pdf.set_font("helvetica", "B", 14)
         pdf.cell(0, 10, "TEKLIF OZETI", ln=True, align="C")
         pdf.set_font("helvetica", "B", 11)
@@ -171,8 +173,21 @@ def generate_pdf(data_dict, image_path=None):
         pdf.set_text_color(22, 101, 52)
         pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):   {data_dict.get('fiyat_dahil', '-')} TL", border=0, ln=True, align="C")
         
-        # --- PDF YASAL UYARI (EN ALT) ---
-        pdf.set_y(-45)
+        # İmleci kutunun altından temiz bir noktaya taşıyoruz
+        # Kutu yüksekliği 35 idi. Başlangıçtan 40 birim aşağı inelim.
+        pdf.set_y(current_y_before_box + 40)
+        
+        # --- PDF YASAL UYARI (AKILLI KONUMLANDIRMA) ---
+        # Sayfa yüksekliği A4 için yaklaşık 297mm.
+        # Footer'ın başlamasını istediğimiz ideal yer alttan 45mm yukarısı (~252mm).
+        # Eğer şu anki konum (cursor) 250'den küçükse, footer'ı aşağı itebiliriz.
+        # Değilse, olduğu yere (kutunun altına) yazarız ki üst üste binmesin.
+        
+        if pdf.get_y() < 245:
+            pdf.set_y(-45)
+        else:
+            pdf.ln(5) # Zaten aşağıdaysak az boşluk bırakıp devam et
+
         pdf.set_font("helvetica", "B", 8)
         pdf.set_text_color(128, 0, 0) # Koyu Kırmızı
         pdf.cell(0, 5, "YASAL UYARI VE BILGILENDIRME:", ln=True)
@@ -187,8 +202,13 @@ def generate_pdf(data_dict, image_path=None):
         )
         pdf.multi_cell(0, 4, disclaimer_text)
         
-        # Footer
-        pdf.set_y(-15)
+        # Footer (Sayfa No / Bilgi)
+        # Footer'ı da dinamik yapıyoruz, çakışma olmasın
+        if pdf.get_y() < 280:
+             pdf.set_y(-15)
+        else:
+             pdf.ln(2)
+
         pdf.set_text_color(100, 100, 100)
         pdf.set_font("helvetica", "I", 8)
         pdf.cell(0, 5, "Bu belge sistem tarafindan otomatik olarak olusturulmustur.", ln=True, align="C")
@@ -268,7 +288,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
             </div>
         </div>""", unsafe_allow_html=True)
 
-    # --- EKRAN İÇİN YASAL UYARI KUTUSU (GÜNCELLENDİ: Hepsi Bullet Point) ---
+    # --- EKRAN İÇİN YASAL UYARI KUTUSU (Bullet Points) ---
     st.markdown("""
         <div style="background-color: #fff4f4; padding: 15px; border-radius: 10px; border: 1px solid #f5c6cb; margin-top: 20px; margin-bottom: 20px;">
             <h5 style="color: #721c24; margin-top: 0; font-size: 16px; margin-bottom: 10px;">⚠️ YASAL UYARI VE SORUMLULUK REDDİ</h5>
