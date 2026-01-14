@@ -291,10 +291,11 @@ if 'sayfa' not in st.session_state: st.session_state.sayfa = 'anasayfa'
 def sayfa_degistir(sayfa_adi): st.session_state.sayfa = sayfa_adi
 
 def landing_page():
-    # Üst Bölüm: Başlık ve Giriş
-    st.write("")
-    st.write("")
-    st.markdown("<h1 style='text-align: center; color: #1C3768;'>Profesyonel Lazer ve Büküm Maliyet Analizi</h1>", unsafe_allow_html=True)
+    # 1. Üst Boşluk (Azaltıldı)
+    st.write("") 
+    
+    # Başlık (Yukarı çekildi: margin-top: -20px)
+    st.markdown("<h1 style='text-align: center; color: #1C3768; margin-top: -20px;'>Profesyonel Lazer ve Büküm Maliyet Analizi</h1>", unsafe_allow_html=True)
     st.divider()
     
     # Bilgi Kartları
@@ -327,7 +328,7 @@ def landing_page():
         </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # Başla Butonu
     c_btn1, c_btn2, c_btn3 = st.columns([1, 2, 1])
@@ -336,19 +337,20 @@ def landing_page():
             st.session_state.app_mode = 'app'
             st.rerun()
 
-    # --- ALT BÖLÜM: Logo ve Link (Yeni Yerleşim) ---
-    st.write("<br>" * 5, unsafe_allow_html=True) # Sayfanın altına itmek için boşluk
+    # --- ALT BÖLÜM: Logo ve Link (SIKIŞTIRILMIŞ TASARIM) ---
+    st.write("<br>", unsafe_allow_html=True) # Boşluk 1 birime indirildi
     st.divider()
+    
     col_l, col_c, col_r = st.columns([1, 1, 1])
     with col_c:
-        # Logo base64 ile ortalanmış
+        # Logo Logic - Negatif margin ile yukarı çekildi
         if os.path.exists("logo.png"):
             try:
                 with open("logo.png", "rb") as image_file:
                     encoded_string = base64.b64encode(image_file.read()).decode()
                 st.markdown(f"""
-                    <div style="display: flex; justify-content: center; margin-bottom: 5px;">
-                        <img src="data:image/png;base64,{encoded_string}" width="150" style="display: block;">
+                    <div style="display: flex; justify-content: center; margin-top: -10px;">
+                        <img src="data:image/png;base64,{encoded_string}" width="140" style="display: block;">
                     </div>
                 """, unsafe_allow_html=True)
             except:
@@ -357,9 +359,9 @@ def landing_page():
             st.markdown("<h3 style='text-align: center; color: #1C3768;'>ALAN LAZER</h3>", unsafe_allow_html=True)
             
         st.markdown("""
-            <div style='text-align: center;'>
+            <div style='text-align: center; margin-top: -5px;'>
                 <a href='https://www.alanlazer.com' target='_blank' 
-                   style='text-decoration: none; color: #1C3768; font-size: 18px; font-weight: 300;'>alanlazer.com</a>
+                   style='text-decoration: none; color: #1C3768; font-size: 16px; font-weight: 300;'>alanlazer.com</a>
             </div>
         """, unsafe_allow_html=True)
 
@@ -445,7 +447,6 @@ def main_app():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # REVİZE: Başlık Değiştirildi
         with st.expander("Birim Fiyatlar"):
             st.write("Malzeme Fiyatı:")
             st.number_input("Manuel Sac Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="kg_input_field")
@@ -453,7 +454,7 @@ def main_app():
             st.write("Büküm Baz Fiyatı:")
             st.number_input("Manuel Büküm Fiyat (TL)", min_value=0.0, step=1.0, format="%g", key="bukum_baz_input")
 
-    # --- ANA ANALİZ EKRANI ---
+    # --- ANA EKRAN ---
     st.title("AI DESTEKLİ PROFESYONEL ANALİZ")
 
     if st.session_state.sayfa == 'anasayfa':
