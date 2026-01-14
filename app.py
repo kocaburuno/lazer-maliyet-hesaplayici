@@ -613,11 +613,9 @@ def main_app():
 
         st.subheader("🛠 Parça Oluşturucu")
         
-        # --- YENİ EKLENEN RADYO BUTON VE ÇİZİM MANTIĞI ---
         sekil_tipi = st.radio("Tip", ["Kare / Dikdörtgen", "Daire / Flanş", "✍️ Serbest Çizim"], horizontal=True)
 
         if sekil_tipi == "✍️ Serbest Çizim":
-            # Kütüphane kontrolü: Eğer requirements.txt'ye eklenmezse hata vermemesi için
             try:
                 from streamlit_drawable_canvas import st_canvas
                 col_ciz1, col_ciz2 = st.columns([1, 2])
@@ -627,7 +625,6 @@ def main_app():
                     stroke_width = st.slider("Kalem Kalınlığı", 1, 10, 2)
                 
                 with col_ciz2:
-                    # Canvas oluşturma
                     canvas_result = st_canvas(
                         fill_color="rgba(255, 165, 0, 0.3)",
                         stroke_width=stroke_width,
@@ -640,23 +637,22 @@ def main_app():
                     )
 
                 if canvas_result.image_data is not None:
-                    # Görüntü işleme ve hesaplama (Foto analiz mantığıyla aynı)
                     img = canvas_result.image_data.astype(np.uint8)
-                    # Canvas RGBA döner, bunu BGR'ye çevirip işleyelim
                     if img.shape[2] == 4:
                         img_bgr = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
                     else:
                         img_bgr = img.copy()
 
                     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-                    # Beyaz arkaplan, siyah çizim -> Threshold (Ters çevirerek çizimi beyaz yapıyoruz)
                     _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-                    contours, _ = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+                    
+                    # DÜZELTME: RETR_EXTERNAL kullanarak sadece dış hatları alıyoruz (iç hatları atlıyoruz)
+                    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     
                     valid_cnts = []
                     if contours:
                         for c in contours:
-                            if cv2.contourArea(c) > 50: # Çok küçük gürültüleri atla
+                            if cv2.contourArea(c) > 50: 
                                 valid_cnts.append(c)
                     
                     if valid_cnts:
@@ -669,20 +665,24 @@ def main_app():
                             gercek_yukseklik = h_px * oran
                             
                             display_img = img_bgr.copy()
-                            # Görselleştirme için konturları çizelim
                             cv2.drawContours(display_img, valid_cnts, -1, (0, 255, 0), 2)
                             
-                            kesim_m = (sum([cv2.arcLength(c, True) for c in valid_cnts]) * oran) / 1000
+                            # DÜZELTME: Çevreyi 2'ye bölerek tek hat uzunluğunu buluyoruz (Mürekkebin iki yanı yerine)
+                            toplam_piksel_cevre = sum([cv2.arcLength(c, True) for c in valid_cnts])
+                            kesim_m = (toplam_piksel_cevre * oran / 2) / 1000 
+                            
                             kontur_ad = len(valid_cnts)
-                            alan_mm2 = cv2.contourArea(all_pts) * (oran**2)
+                            
+                            # DÜZELTME: Ağırlık hesabı için mürekkep alanı yerine Parça Boyutlarını (Bounding Box) kullanıyoruz.
+                            # Bu sayede malzeme firesi ve ağırlığı doğru hesaplanır.
+                            alan_mm2 = gercek_genislik * gercek_yukseklik
 
                             hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, gercek_genislik, gercek_yukseklik, display_img,
                                               metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
             except ImportError:
-                st.error("Çizim modülü yüklenemedi. Lütfen GitHub 'requirements.txt' dosyasına 'streamlit-drawable-canvas' satırını eklediğinizden emin olun.")
+                st.error("Çizim modülü yüklenemedi. Lütfen 'requirements.txt' dosyasına 'streamlit-drawable-canvas' satırını ekleyin.")
         
         else:
-            # MEVCUT STANDART ŞEKİLLER (Kare/Daire) KODU - DEĞİŞTİRİLMEDİ
             col_hz1, col_hz2 = st.columns([1, 2])
             with col_hz1:
                 if sekil_tipi == "Kare / Dikdörtgen":
@@ -702,7 +702,7 @@ def main_app():
                     net_alan_mm2 = (genislik * yukseklik) - delik_sayisi * (math.pi * (delik_capi/2)**2)
                     piercing = 1 + delik_sayisi
                     w_r, h_r = genislik, yukseklik
-                else: # Daire / Flanş
+                else: 
                     cap = st.number_input("Dış Çap", value=100.0)
                     delik_sayisi = st.number_input("İç Delik", value=1)
                     delik_capi = st.number_input("Delik Çapı", value=50.0)
