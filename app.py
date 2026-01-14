@@ -268,17 +268,17 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
             </div>
         </div>""", unsafe_allow_html=True)
 
-    # --- EKRAN İÇİN YASAL UYARI KUTUSU ---
+    # --- EKRAN İÇİN YASAL UYARI KUTUSU (GÜNCELLENDİ: Hepsi Bullet Point) ---
     st.markdown("""
         <div style="background-color: #fff4f4; padding: 15px; border-radius: 10px; border: 1px solid #f5c6cb; margin-top: 20px; margin-bottom: 20px;">
-            <h5 style="color: #721c24; margin-top: 0; font-size: 16px;">⚠️ YASAL UYARI VE SORUMLULUK REDDİ</h5>
-            <p style="color: #721c24; font-size: 13px; margin-bottom: 0; line-height: 1.4;">
-                Bu panelde sunulan sonuçlar, yüklenen çizimlerin <b>algoritmik analizine</b> dayanır ve yalnızca <b>ön bilgilendirme</b> amaçlıdır.
-                <ul style="margin-bottom:0;">
-                    <li>Burada belirtilen tutarlar <b>resmi bir teklif niteliği taşımaz</b> ve şirketimiz açısından yasal bir bağlayıcılığı yoktur.</li>
+            <h5 style="color: #721c24; margin-top: 0; font-size: 16px; margin-bottom: 10px;">⚠️ YASAL UYARI VE SORUMLULUK REDDİ</h5>
+            <div style="color: #721c24; font-size: 13px; line-height: 1.4;">
+                <ul style="margin-bottom: 0; padding-left: 20px;">
+                    <li style="margin-bottom: 5px;">Bu panelde sunulan sonuçlar, yüklenen çizimlerin <b>algoritmik analizine</b> dayanır ve yalnızca <b>ön bilgilendirme</b> amaçlıdır.</li>
+                    <li style="margin-bottom: 5px;">Burada belirtilen tutarlar <b>resmi bir teklif niteliği taşımaz</b> ve şirketimiz açısından yasal bir bağlayıcılığı yoktur.</li>
                     <li>Kesin fiyatlandırma; teknik inceleme, güncel stok ve hammadde maliyetleri kontrol edildikten sonra sunulacak <b>resmi teklif</b> ile geçerlilik kazanır.</li>
                 </ul>
-            </p>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
