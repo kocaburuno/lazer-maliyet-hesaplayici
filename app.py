@@ -357,11 +357,12 @@ def landing_page():
                 st.markdown("<h3 style='text-align: center; color: #1C3768;'>ALAN LAZER</h3>", unsafe_allow_html=True)
         else:
             st.markdown("<h3 style='text-align: center; color: #1C3768;'>ALAN LAZER</h3>", unsafe_allow_html=True)
-            
+        
+        # LINK - DAHA AYRIK VE DAHA BÜYÜK
         st.markdown("""
-            <div style='text-align: center; margin-top: -5px;'>
+            <div style='text-align: center; margin-top: 10px;'>
                 <a href='https://www.alanlazer.com' target='_blank' 
-                   style='text-decoration: none; color: #1C3768; font-size: 16px; font-weight: 300;'>alanlazer.com</a>
+                   style='text-decoration: none; color: #1C3768; font-size: 22px; font-weight: 300;'>alanlazer.com</a>
             </div>
         """, unsafe_allow_html=True)
 
