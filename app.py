@@ -78,6 +78,21 @@ st.markdown("""
             color: #666;
             font-size: 14px;
         }
+        
+        /* LANDING PAGE BIO KUTUSU (YENİ) */
+        .landing-bio-box {
+            background-color: #f8f9fa; 
+            border-left: 4px solid #1C3768; 
+            padding: 20px; 
+            border-radius: 0 10px 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            color: #444;
+            line-height: 1.6;
+            font-size: 14px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
 
         @media only screen and (max_width: 600px) {
             .floating-pdf-container {
@@ -158,7 +173,7 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(40, 8, f"{data_dict.get('bukum_tutar', '-')} TL", border=0, align="R", ln=True)
         pdf.ln(5)
 
-        # Fiyat (DÜZELTME BAŞLANGICI - Yerleşim Mantığı)
+        # Fiyat
         current_y_before_box = pdf.get_y()
         pdf.set_draw_color(28, 55, 104)
         pdf.set_line_width(0.5)
@@ -174,19 +189,13 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):   {data_dict.get('fiyat_dahil', '-')} TL", border=0, ln=True, align="C")
         
         # İmleci kutunun altından temiz bir noktaya taşıyoruz
-        # Kutu yüksekliği 35 idi. Başlangıçtan 40 birim aşağı inelim.
         pdf.set_y(current_y_before_box + 40)
         
         # --- PDF YASAL UYARI (AKILLI KONUMLANDIRMA) ---
-        # Sayfa yüksekliği A4 için yaklaşık 297mm.
-        # Footer'ın başlamasını istediğimiz ideal yer alttan 45mm yukarısı (~252mm).
-        # Eğer şu anki konum (cursor) 250'den küçükse, footer'ı aşağı itebiliriz.
-        # Değilse, olduğu yere (kutunun altına) yazarız ki üst üste binmesin.
-        
         if pdf.get_y() < 245:
             pdf.set_y(-45)
         else:
-            pdf.ln(5) # Zaten aşağıdaysak az boşluk bırakıp devam et
+            pdf.ln(5)
 
         pdf.set_font("helvetica", "B", 8)
         pdf.set_text_color(128, 0, 0) # Koyu Kırmızı
@@ -202,8 +211,7 @@ def generate_pdf(data_dict, image_path=None):
         )
         pdf.multi_cell(0, 4, disclaimer_text)
         
-        # Footer (Sayfa No / Bilgi)
-        # Footer'ı da dinamik yapıyoruz, çakışma olmasın
+        # Footer
         if pdf.get_y() < 280:
              pdf.set_y(-15)
         else:
@@ -288,7 +296,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
             </div>
         </div>""", unsafe_allow_html=True)
 
-    # --- EKRAN İÇİN YASAL UYARI KUTUSU (Bullet Points) ---
+    # --- EKRAN İÇİN YASAL UYARI KUTUSU ---
     st.markdown("""
         <div style="background-color: #fff4f4; padding: 15px; border-radius: 10px; border: 1px solid #f5c6cb; margin-top: 20px; margin-bottom: 20px;">
             <h5 style="color: #721c24; margin-top: 0; font-size: 16px; margin-bottom: 10px;">⚠️ YASAL UYARI VE SORUMLULUK REDDİ</h5>
@@ -399,19 +407,21 @@ def landing_page():
             st.session_state.app_mode = 'app'
             st.rerun()
 
-    # --- ALT BÖLÜM: Logo ve Link (SIKIŞTIRILMIŞ TASARIM) ---
-    st.write("<br>", unsafe_allow_html=True) # Boşluk 1 birime indirildi
+    # --- ALT BÖLÜM: Logo ve Link + Kurumsal Yazı (DÜZENLENDİ) ---
+    st.write("<br>", unsafe_allow_html=True)
     st.divider()
     
-    col_l, col_c, col_r = st.columns([1, 1, 1])
-    with col_c:
-        # Logo Logic - Negatif margin ile yukarı çekildi
+    # 1 Birim Logo için, 3 Birim Yazı için (Alan açıldı)
+    col_footer_l, col_footer_r = st.columns([1, 3], gap="large")
+    
+    with col_footer_l:
+        # LOGO KISMI (SOLA YASLI)
         if os.path.exists("logo.png"):
             try:
                 with open("logo.png", "rb") as image_file:
                     encoded_string = base64.b64encode(image_file.read()).decode()
                 st.markdown(f"""
-                    <div style="display: flex; justify-content: center; margin-top: -10px;">
+                    <div style="display: flex; justify-content: center; margin-top: 10px;">
                         <img src="data:image/png;base64,{encoded_string}" width="140" style="display: block;">
                     </div>
                 """, unsafe_allow_html=True)
@@ -420,11 +430,23 @@ def landing_page():
         else:
             st.markdown("<h3 style='text-align: center; color: #1C3768;'>ALAN LAZER</h3>", unsafe_allow_html=True)
         
-        # LINK - DAHA AYRIK VE DAHA BÜYÜK
+        # LINK
         st.markdown("""
             <div style='text-align: center; margin-top: 10px;'>
                 <a href='https://www.alanlazer.com' target='_blank' 
-                   style='text-decoration: none; color: #1C3768; font-size: 22px; font-weight: 300;'>alanlazer.com</a>
+                   style='text-decoration: none; color: #1C3768; font-size: 18px; font-weight: 300;'>alanlazer.com</a>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_footer_r:
+        # KURUMSAL YAZI KISMI (SAĞDA, PROFESYONEL GÖRÜNÜM)
+        st.markdown("""
+            <div class="landing-bio-box">
+                <div>
+                    <b>Alan Lazer</b>, kökleri 1963 yılına dayanan bir aile işletmesi olarak lazer kesim ve abkant büküm alanında fason üretim hizmeti sunmaktadır. 
+                    Farklı sektörlere yönelik parça üretimini, planlı termin ve teknik gereklilikler doğrultusunda gerçekleştirmeyi esas alır. 
+                    Üretim süreçlerinde sürdürülebilirlik ve verimlilik birlikte gözetilir.
+                </div>
             </div>
         """, unsafe_allow_html=True)
 
