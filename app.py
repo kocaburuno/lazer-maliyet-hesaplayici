@@ -79,7 +79,7 @@ st.markdown("""
             font-size: 14px;
         }
         
-        /* LANDING PAGE BIO KUTUSU (YENİ) */
+        /* LANDING PAGE BIO KUTUSU (GÜNCELLENDİ: DİKEY ORTALAMA) */
         .landing-bio-box {
             background-color: #f8f9fa; 
             border-left: 4px solid #1C3768; 
@@ -89,9 +89,10 @@ st.markdown("""
             color: #444;
             line-height: 1.6;
             font-size: 14px;
-            height: 100%;
+            min-height: 140px; /* Kutuya hacim kazandırır */
             display: flex;
-            align-items: center;
+            align-items: center; /* Dikey olarak tam ortalar */
+            justify-content: flex-start; /* Yatayda sola yaslar */
         }
 
         @media only screen and (max_width: 600px) {
@@ -296,7 +297,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
             </div>
         </div>""", unsafe_allow_html=True)
 
-    # --- EKRAN İÇİN YASAL UYARI KUTUSU ---
+    # --- EKRAN İÇİN YASAL UYARI KUTUSU (Bullet Points) ---
     st.markdown("""
         <div style="background-color: #fff4f4; padding: 15px; border-radius: 10px; border: 1px solid #f5c6cb; margin-top: 20px; margin-bottom: 20px;">
             <h5 style="color: #721c24; margin-top: 0; font-size: 16px; margin-bottom: 10px;">⚠️ YASAL UYARI VE SORUMLULUK REDDİ</h5>
@@ -439,7 +440,7 @@ def landing_page():
         """, unsafe_allow_html=True)
 
     with col_footer_r:
-        # KURUMSAL YAZI KISMI (SAĞDA, PROFESYONEL GÖRÜNÜM)
+        # KURUMSAL YAZI KISMI (DİKEY ORTALAMA UYGULANDI)
         st.markdown("""
             <div class="landing-bio-box">
                 <div>
