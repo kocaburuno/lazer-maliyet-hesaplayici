@@ -367,7 +367,7 @@ def landing_page():
         """, unsafe_allow_html=True)
 
 def main_app():
-    # --- SIDEBAR (SADECE UYGULAMA MODUNDA GÖRÜNÜR) ---
+    # --- SIDEBAR ---
     with st.sidebar:
         try:
             st.image("logo.png", use_column_width=True)
@@ -612,45 +612,115 @@ def main_app():
             st.rerun()
 
         st.subheader("🛠 Parça Oluşturucu")
-        col_hz1, col_hz2 = st.columns([1, 2])
-        with col_hz1:
-            sekil_tipi = st.radio("Tip", ["Kare / Dikdörtgen", "Daire / Flanş"])
-            if sekil_tipi == "Kare / Dikdörtgen":
-                genislik = st.number_input("Genişlik", value=100.0)
-                yukseklik = st.number_input("Yükseklik", value=100.0)
-                delik_sayisi = st.number_input("Delik Sayısı", value=0)
-                delik_capi = st.number_input("Delik Çapı", value=10.0)
-                canvas = np.zeros((400, 600, 3), dtype="uint8") + 255
-                max_dim = max(genislik, yukseklik)
-                scale = 300 / max_dim
-                w_px, h_px = int(genislik * scale), int(yukseklik * scale)
-                start_x, start_y = (600 - w_px) // 2, (400 - h_px) // 2
-                cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0,0,0), 2)
-                if delik_sayisi > 0:
-                    cv2.circle(canvas, (300, 200), int(delik_capi*scale/2), (0,0,255), 2)
-                toplam_kesim_mm = 2 * (genislik + yukseklik) + delik_sayisi * (math.pi * delik_capi)
-                net_alan_mm2 = (genislik * yukseklik) - delik_sayisi * (math.pi * (delik_capi/2)**2)
-                piercing = 1 + delik_sayisi
-                w_r, h_r = genislik, yukseklik
-            else:
-                cap = st.number_input("Dış Çap", value=100.0)
-                delik_sayisi = st.number_input("İç Delik", value=1)
-                delik_capi = st.number_input("Delik Çapı", value=50.0)
-                canvas = np.zeros((400, 400, 3), dtype="uint8") + 255
-                cv2.circle(canvas, (200, 200), 140, (0,0,0), 2)
-                if delik_sayisi > 0:
-                    cv2.circle(canvas, (200, 200), int((delik_capi/cap)*140), (0,0,255), 2)
-                toplam_kesim_mm = math.pi * cap + delik_sayisi * (math.pi * delik_capi)
-                net_alan_mm2 = math.pi * (cap/2)**2 - delik_sayisi * (math.pi * (delik_capi/2)**2)
-                piercing = 1 + delik_sayisi
-                w_r, h_r = cap, cap
+        
+        # --- YENİ EKLENEN RADYO BUTON VE ÇİZİM MANTIĞI ---
+        sekil_tipi = st.radio("Tip", ["Kare / Dikdörtgen", "Daire / Flanş", "✍️ Serbest Çizim"], horizontal=True)
 
-        with col_hz2:
-            canvas_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
-            st.image(canvas_rgb, caption=f"Önizleme: {w_r}x{h_r}mm", use_container_width=True)
-            canvas_bgr = cv2.cvtColor(canvas_rgb, cv2.COLOR_RGB2BGR)
-            hesapla_ve_goster(toplam_kesim_mm/1000, piercing, net_alan_mm2, w_r, h_r, canvas_bgr,
-                              metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
+        if sekil_tipi == "✍️ Serbest Çizim":
+            # Kütüphane kontrolü: Eğer requirements.txt'ye eklenmezse hata vermemesi için
+            try:
+                from streamlit_drawable_canvas import st_canvas
+                col_ciz1, col_ciz2 = st.columns([1, 2])
+                with col_ciz1:
+                    ref_genislik = st.number_input("Çizimin Gerçek Genişliği (mm)", value=100.0, step=10.0, format="%g")
+                    st.info("Yandaki alana parçanızı çizin. Çizim bittiğinde otomatik hesaplanacaktır.")
+                    stroke_width = st.slider("Kalem Kalınlığı", 1, 10, 2)
+                
+                with col_ciz2:
+                    # Canvas oluşturma
+                    canvas_result = st_canvas(
+                        fill_color="rgba(255, 165, 0, 0.3)",
+                        stroke_width=stroke_width,
+                        stroke_color="#000000",
+                        background_color="#ffffff",
+                        height=400,
+                        width=600,
+                        drawing_mode="freedraw",
+                        key="canvas",
+                    )
+
+                if canvas_result.image_data is not None:
+                    # Görüntü işleme ve hesaplama (Foto analiz mantığıyla aynı)
+                    img = canvas_result.image_data.astype(np.uint8)
+                    # Canvas RGBA döner, bunu BGR'ye çevirip işleyelim
+                    if img.shape[2] == 4:
+                        img_bgr = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
+                    else:
+                        img_bgr = img.copy()
+
+                    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+                    # Beyaz arkaplan, siyah çizim -> Threshold (Ters çevirerek çizimi beyaz yapıyoruz)
+                    _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+                    contours, _ = cv2.findContours(binary, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+                    
+                    valid_cnts = []
+                    if contours:
+                        for c in contours:
+                            if cv2.contourArea(c) > 50: # Çok küçük gürültüleri atla
+                                valid_cnts.append(c)
+                    
+                    if valid_cnts:
+                        all_pts = np.concatenate(valid_cnts)
+                        _, _, w_px, h_px = cv2.boundingRect(all_pts)
+                        
+                        if w_px > 0:
+                            oran = ref_genislik / w_px
+                            gercek_genislik = w_px * oran
+                            gercek_yukseklik = h_px * oran
+                            
+                            display_img = img_bgr.copy()
+                            # Görselleştirme için konturları çizelim
+                            cv2.drawContours(display_img, valid_cnts, -1, (0, 255, 0), 2)
+                            
+                            kesim_m = (sum([cv2.arcLength(c, True) for c in valid_cnts]) * oran) / 1000
+                            kontur_ad = len(valid_cnts)
+                            alan_mm2 = cv2.contourArea(all_pts) * (oran**2)
+
+                            hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, gercek_genislik, gercek_yukseklik, display_img,
+                                              metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
+            except ImportError:
+                st.error("Çizim modülü yüklenemedi. Lütfen GitHub 'requirements.txt' dosyasına 'streamlit-drawable-canvas' satırını eklediğinizden emin olun.")
+        
+        else:
+            # MEVCUT STANDART ŞEKİLLER (Kare/Daire) KODU - DEĞİŞTİRİLMEDİ
+            col_hz1, col_hz2 = st.columns([1, 2])
+            with col_hz1:
+                if sekil_tipi == "Kare / Dikdörtgen":
+                    genislik = st.number_input("Genişlik", value=100.0)
+                    yukseklik = st.number_input("Yükseklik", value=100.0)
+                    delik_sayisi = st.number_input("Delik Sayısı", value=0)
+                    delik_capi = st.number_input("Delik Çapı", value=10.0)
+                    canvas = np.zeros((400, 600, 3), dtype="uint8") + 255
+                    max_dim = max(genislik, yukseklik)
+                    scale = 300 / max_dim
+                    w_px, h_px = int(genislik * scale), int(yukseklik * scale)
+                    start_x, start_y = (600 - w_px) // 2, (400 - h_px) // 2
+                    cv2.rectangle(canvas, (start_x, start_y), (start_x + w_px, start_y + h_px), (0,0,0), 2)
+                    if delik_sayisi > 0:
+                        cv2.circle(canvas, (300, 200), int(delik_capi*scale/2), (0,0,255), 2)
+                    toplam_kesim_mm = 2 * (genislik + yukseklik) + delik_sayisi * (math.pi * delik_capi)
+                    net_alan_mm2 = (genislik * yukseklik) - delik_sayisi * (math.pi * (delik_capi/2)**2)
+                    piercing = 1 + delik_sayisi
+                    w_r, h_r = genislik, yukseklik
+                else: # Daire / Flanş
+                    cap = st.number_input("Dış Çap", value=100.0)
+                    delik_sayisi = st.number_input("İç Delik", value=1)
+                    delik_capi = st.number_input("Delik Çapı", value=50.0)
+                    canvas = np.zeros((400, 400, 3), dtype="uint8") + 255
+                    cv2.circle(canvas, (200, 200), 140, (0,0,0), 2)
+                    if delik_sayisi > 0:
+                        cv2.circle(canvas, (200, 200), int((delik_capi/cap)*140), (0,0,255), 2)
+                    toplam_kesim_mm = math.pi * cap + delik_sayisi * (math.pi * delik_capi)
+                    net_alan_mm2 = math.pi * (cap/2)**2 - delik_sayisi * (math.pi * (delik_capi/2)**2)
+                    piercing = 1 + delik_sayisi
+                    w_r, h_r = cap, cap
+
+            with col_hz2:
+                canvas_rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
+                st.image(canvas_rgb, caption=f"Önizleme: {w_r}x{h_r}mm", use_container_width=True)
+                canvas_bgr = cv2.cvtColor(canvas_rgb, cv2.COLOR_RGB2BGR)
+                hesapla_ve_goster(toplam_kesim_mm/1000, piercing, net_alan_mm2, w_r, h_r, canvas_bgr,
+                                  metal, kalinlik, adet, guncel_hiz, secilen_plaka_adi, bukum_adedi)
 
 # ==========================================
 # 4. UYGULAMA BAŞLATICI
