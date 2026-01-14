@@ -170,11 +170,29 @@ def generate_pdf(data_dict, image_path=None):
         pdf.cell(95, 10, f"TOPLAM (KDV HARIC):   {data_dict.get('fiyat_haric', '-')} TL", border=0, align="C")
         pdf.set_text_color(22, 101, 52)
         pdf.cell(95, 10, f"TOPLAM (KDV DAHIL):   {data_dict.get('fiyat_dahil', '-')} TL", border=0, ln=True, align="C")
+        
+        # --- PDF YASAL UYARI (EN ALT) ---
+        pdf.set_y(-45)
+        pdf.set_font("helvetica", "B", 8)
+        pdf.set_text_color(128, 0, 0) # Koyu Kırmızı
+        pdf.cell(0, 5, "YASAL UYARI VE BILGILENDIRME:", ln=True)
+        
+        pdf.set_font("helvetica", "", 7)
+        pdf.set_text_color(50, 50, 50) # Koyu Gri
+        disclaimer_text = (
+            "Bu belgedeki veriler, yuklenen cizimlerin algoritmik analizine dayanir ve ON BILGILENDIRME "
+            "amacli olup RESMI TEKLIF niteligi tasimaz. Sirketimiz acisindan yasal baglayiciligi yoktur. "
+            "Kesin fiyatlandirma, teknik inceleme ve stok kontrolu sonrasinda onaylanan resmi teklif formu "
+            "ile gecerlilik kazanir. Veri girisi ve teknik aksakliklardan dogabilecek hatalardan sirketimiz sorumlu degildir."
+        )
+        pdf.multi_cell(0, 4, disclaimer_text)
+        
         # Footer
-        pdf.set_y(-30)
+        pdf.set_y(-15)
         pdf.set_text_color(100, 100, 100)
         pdf.set_font("helvetica", "I", 8)
         pdf.cell(0, 5, "Bu belge sistem tarafindan otomatik olarak olusturulmustur.", ln=True, align="C")
+        
         return bytes(pdf.output())
     except Exception as e:
         return str(e).encode()
@@ -196,7 +214,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     
     malzeme_tutar = toplam_agirlik_fireli * kg_fiyat
     
-    # --- YENİ EKLENEN MINIMUM FIYAT MANTIGI ---
+    # --- MINIMUM FIYAT MANTIGI ---
     ham_lazer_tutar = sure_dk * DK_UCRETI
     lazer_min_not = ""
     
@@ -205,7 +223,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
         lazer_min_not = "(Min. 250 TL)"
     else:
         lazer_tutar = ham_lazer_tutar
-    # ------------------------------------------
+    # -----------------------------
     
     bukum_tutar = 0.0
     aktif_bukum_baz_fiyat = bukum_baz_fiyat_manual
@@ -249,6 +267,20 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
                 KDV DAHİL: {round(kdvli_fiyat, 2)} TL
             </div>
         </div>""", unsafe_allow_html=True)
+
+    # --- EKRAN İÇİN YASAL UYARI KUTUSU ---
+    st.markdown("""
+        <div style="background-color: #fff4f4; padding: 15px; border-radius: 10px; border: 1px solid #f5c6cb; margin-top: 20px; margin-bottom: 20px;">
+            <h5 style="color: #721c24; margin-top: 0; font-size: 16px;">⚠️ YASAL UYARI VE SORUMLULUK REDDİ</h5>
+            <p style="color: #721c24; font-size: 13px; margin-bottom: 0; line-height: 1.4;">
+                Bu panelde sunulan sonuçlar, yüklenen çizimlerin <b>algoritmik analizine</b> dayanır ve yalnızca <b>ön bilgilendirme</b> amaçlıdır.
+                <ul style="margin-bottom:0;">
+                    <li>Burada belirtilen tutarlar <b>resmi bir teklif niteliği taşımaz</b> ve şirketimiz açısından yasal bir bağlayıcılığı yoktur.</li>
+                    <li>Kesin fiyatlandırma; teknik inceleme, güncel stok ve hammadde maliyetleri kontrol edildikten sonra sunulacak <b>resmi teklif</b> ile geçerlilik kazanır.</li>
+                </ul>
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
     pdf_bytes = None
     try:
