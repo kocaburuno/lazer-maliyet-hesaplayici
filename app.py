@@ -646,8 +646,8 @@ def main_app():
                     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
                     _, binary = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
                     
-                    # DÜZELTME: RETR_EXTERNAL kullanarak sadece dış hatları alıyoruz (iç hatları atlıyoruz)
-                    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    # 1. KESİM YOLU: İç-Dış tüm çizgileri alıyoruz
+                    contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                     
                     valid_cnts = []
                     if contours:
@@ -667,14 +667,14 @@ def main_app():
                             display_img = img_bgr.copy()
                             cv2.drawContours(display_img, valid_cnts, -1, (0, 255, 0), 2)
                             
-                            # DÜZELTME: Çevreyi 2'ye bölerek tek hat uzunluğunu buluyoruz (Mürekkebin iki yanı yerine)
+                            # 2. KESİM SÜRESİ HESABI: Çift yol sorununu /2 ile çözüyoruz.
                             toplam_piksel_cevre = sum([cv2.arcLength(c, True) for c in valid_cnts])
                             kesim_m = (toplam_piksel_cevre * oran / 2) / 1000 
                             
                             kontur_ad = len(valid_cnts)
                             
-                            # DÜZELTME: Ağırlık hesabı için mürekkep alanı yerine Parça Boyutlarını (Bounding Box) kullanıyoruz.
-                            # Bu sayede malzeme firesi ve ağırlığı doğru hesaplanır.
+                            # 3. AĞIRLIK HESABI (DÜZELTİLDİ):
+                            # Delikler düşülmeden, dolu plaka (Bounding Box) ağırlığı alınıyor.
                             alan_mm2 = gercek_genislik * gercek_yukseklik
 
                             hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, gercek_genislik, gercek_yukseklik, display_img,
