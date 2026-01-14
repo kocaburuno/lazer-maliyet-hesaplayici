@@ -195,7 +195,17 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
     sure_dk = (kesim_m * 1000 / guncel_hiz) * adet + (kontur_ad * adet * p_suresi / 60)
     
     malzeme_tutar = toplam_agirlik_fireli * kg_fiyat
-    lazer_tutar = sure_dk * DK_UCRETI
+    
+    # --- YENİ EKLENEN MINIMUM FIYAT MANTIGI ---
+    ham_lazer_tutar = sure_dk * DK_UCRETI
+    lazer_min_not = ""
+    
+    if ham_lazer_tutar < 250.0:
+        lazer_tutar = 250.0
+        lazer_min_not = "(Min. 250 TL)"
+    else:
+        lazer_tutar = ham_lazer_tutar
+    # ------------------------------------------
     
     bukum_tutar = 0.0
     aktif_bukum_baz_fiyat = bukum_baz_fiyat_manual
@@ -227,7 +237,7 @@ def hesapla_ve_goster(kesim_m, kontur_ad, alan_mm2, w_real, h_real, result_img_b
                 <span>Malzeme:</span> <span style="font-weight:bold;">{round(malzeme_tutar, 2)} TL</span>
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:14px; color:#555;">
-                <span>Lazer İşç.:</span> <span style="font-weight:bold;">{round(lazer_tutar, 2)} TL</span>
+                <span>Lazer İşç.:</span> <span style="font-weight:bold;">{round(lazer_tutar, 2)} TL <span style="font-size:11px; color:#d9534f; margin-left:5px;">{lazer_min_not}</span></span>
             </div>
             <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px; color:#555; border-bottom:1px solid #ddd; padding-bottom:4px;">
                 <span>Büküm İşç.:</span> <span style="font-weight:bold;">{round(bukum_tutar, 2)} TL</span>
