@@ -27,6 +27,19 @@ st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_ic
 # ==========================================
 st.markdown("""
     <style>
+        /* --- ZORUNLU BEYAZ TEMA (LIGHT MODE FORCE) --- */
+        [data-testid="stAppViewContainer"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        [data-testid="stSidebar"] {
+            background-color: #f8f9fa !important;
+        }
+        [data-testid="stHeader"] {
+            background-color: rgba(0,0,0,0) !important;
+        }
+        /* --------------------------------------------- */
+
         /* Genel Ayarlar */
         section[data-testid="stSidebar"] div.block-container { padding-top: 1rem; }
         div.stButton > button { min-height: 50px; }
