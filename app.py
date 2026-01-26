@@ -27,17 +27,65 @@ st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_ic
 # ==========================================
 st.markdown("""
     <style>
-        /* --- ZORUNLU BEYAZ TEMA (LIGHT MODE FORCE) --- */
+        /* --- ZORUNLU AYDINLIK TEMA (LIGHT MODE FORCE) --- */
+        
+        /* 1. Ana Arka Planı Beyaz Yap */
         [data-testid="stAppViewContainer"] {
             background-color: #ffffff !important;
-            color: #000000 !important;
+            color: #31333F !important; /* Standart koyu gri yazı rengi */
         }
+        
+        /* 2. Sidebar Arka Planını Açık Gri Yap */
         [data-testid="stSidebar"] {
             background-color: #f8f9fa !important;
         }
+        
+        /* 3. Header (Üst Bar) Şeffaf Olsun */
         [data-testid="stHeader"] {
             background-color: rgba(0,0,0,0) !important;
         }
+
+        /* 4. TÜM METİNLERİ KOYU RENGE ZORLA (Görünmez yazıları düzeltir) */
+        .stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6, span, label, li, div {
+            color: #31333F !important;
+        }
+
+        /* 5. BUTONLARI GÖRÜNÜR YAP (Dark modda beyaz olan butonları düzeltir) */
+        div.stButton > button {
+            background-color: #ffffff !important;
+            color: #31333F !important;
+            border: 1px solid #d3d3d3 !important;
+        }
+        div.stButton > button:hover {
+            border-color: #1C3768 !important;
+            color: #1C3768 !important;
+            background-color: #f0f2f6 !important;
+        }
+        
+        /* Primary (Kırmızı/Mavi) Butonlar için özel ayar */
+        div.stButton > button[kind="primary"] {
+            background-color: #ff4b4b !important;
+            color: #ffffff !important; /* İçi beyaz yazı */
+            border: none !important;
+        }
+
+        /* 6. INPUT ALANLARINI DÜZELT (Arka plan beyaz, yazı siyah) */
+        div[data-baseweb="input"] {
+            background-color: #ffffff !important;
+            border-color: #d3d3d3 !important;
+        }
+        input {
+            color: #31333F !important; 
+        }
+
+        /* --------------------------------------------- */
+        /* ÖZEL CLASS RENKLERİNİ TEKRAR TANIMLA (Yukarıdaki genel kural ezmesin diye) */
+        
+        .landing-title { color: #1C3768 !important; }
+        .landing-text { color: #666666 !important; }
+        .analiz-bilgi-deger { color: #111111 !important; }
+        .analiz-bilgi-satir { color: #555555 !important; }
+        
         /* --------------------------------------------- */
 
         /* Genel Ayarlar */
@@ -80,6 +128,7 @@ st.markdown("""
         .landing-icon {
             font-size: 50px;
             margin-bottom: 15px;
+            color: #31333F !important; /* İkon rengini sabitle */
         }
         .landing-title {
             font-weight: bold;
