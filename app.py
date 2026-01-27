@@ -23,76 +23,87 @@ except:
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
 # ==========================================
-# 1. CSS VE STİL AYARLARI
+# 1. CSS VE STİL AYARLARI (GÜÇLENDİRİLMİŞ LIGHT MODE)
 # ==========================================
 st.markdown("""
     <style>
         /* ================================================================= */
-        /* ZORUNLU "LIGHT MODE" (AYDINLIK TEMA) SABİTLEME KURALLARI          */
-        /* Cihaz Dark Modda olsa bile bu kurallar geçerli olacaktır.         */
+        /* KESİN LIGHT MODE (AYDINLIK TEMA) ZORLAMA KODLARI                  */
         /* ================================================================= */
 
-        /* 1. ANA ARKA PLANLAR */
-        [data-testid="stAppViewContainer"] {
-            background-color: #ffffff !important; /* Ana sayfa beyaz */
-            color: #31333F !important; /* Ana yazı rengi koyu gri */
-        }
-        [data-testid="stSidebar"] {
-            background-color: #f8f9fa !important; /* Sidebar açık gri */
-        }
-        [data-testid="stHeader"] {
-            background-color: rgba(0,0,0,0) !important; /* Header şeffaf */
+        /* 1. KÖK DEĞİŞKENLERİ EZME (Streamlit'in renk hafızasını değiştirir) */
+        :root {
+            --primary-color: #ff4b4b;
+            --background-color: #ffffff;
+            --secondary-background-color: #f0f2f6;
+            --text-color: #31333F;
+            --font: sans-serif;
         }
 
-        /* 2. TÜM YAZILARI KOYU RENGE ZORLA */
-        .stMarkdown, .stText, p, h1, h2, h3, h4, h5, h6, span, label, li, div {
+        /* 2. GENEL ARKA PLANLAR */
+        [data-testid="stAppViewContainer"], .stApp {
+            background-color: #ffffff !important;
             color: #31333F !important;
         }
+        [data-testid="stSidebar"] {
+            background-color: #f8f9fa !important;
+        }
+        [data-testid="stHeader"] {
+            background-color: rgba(0,0,0,0) !important;
+        }
 
-        /* 3. GİRİŞ KUTULARI (Selectbox, Number Input vb.) - SİYAHLAŞMAYI ÖNLER */
-        /* Input dış çerçevesi ve arka planı */
-        div[data-baseweb="select"] > div,
+        /* 3. GİRİŞ KUTULARI VE SELECTBOX (SİYAHLAŞMAYI ÖNLER) */
+        /* Tüm inputların arka planını beyaza, yazısını siyaha zorla */
+        .stTextInput, .stNumberInput, .stSelectbox, .stDateInput {
+            color: #31333F !important;
+        }
+        
+        /* Input kutularının iç yapısı (Uber Baseweb bileşenleri) */
         div[data-baseweb="base-input"],
+        div[data-baseweb="select"] > div,
         div[data-baseweb="input"] {
             background-color: #ffffff !important;
             color: #31333F !important;
             border-color: #d3d3d3 !important;
-        }
-        
-        /* Input içindeki yazılar */
-        input[type="number"], input[type="text"] {
-            color: #31333F !important;
-            caret-color: #31333F !important; /* Yanıp sönen imleç rengi */
-        }
-        
-        /* Selectbox seçili öğe rengi */
-        div[data-testid="stSelectbox"] > div > div {
-             color: #31333F !important;
+            -webkit-text-fill-color: #31333F !important;
         }
 
-        /* Dropdown menü (Açılır liste) arka planı */
-        ul[data-baseweb="menu"], div[data-baseweb="popover"] {
+        /* Sayı ve Yazı giriş alanlarının kendisi */
+        input[type="number"], input[type="text"] {
+            background-color: #ffffff !important;
+            color: #31333F !important;
+            caret-color: #000000 !important;
+        }
+
+        /* 4. AÇILIR MENÜ LİSTESİ (POPOVER) */
+        /* Seçenekler listesi açıldığında arka plan beyaz olsun */
+        div[data-baseweb="popover"],
+        div[data-baseweb="menu"],
+        ul[role="listbox"] {
             background-color: #ffffff !important;
         }
+        /* Listedeki seçeneklerin rengi */
         li[role="option"] {
             color: #31333F !important;
             background-color: #ffffff !important;
         }
+        /* Seçili eleman */
+        div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
+            color: #31333F !important;
+        }
 
-        /* 4. DOSYA YÜKLEME ALANI (File Uploader) */
-        div[data-testid="stFileUploaderDropzone"] {
-            background-color: #f0f2f6 !important; /* Standart açık gri */
-            border: 1px dashed #d3d3d3 !important;
+        /* 5. DOSYA YÜKLEME ALANI */
+        [data-testid="stFileUploaderDropzone"] {
+            background-color: #f0f2f6 !important;
+            color: #31333F !important;
+            border: 1px dashed #a0a0a0 !important;
+        }
+        [data-testid="stFileUploaderDropzone"] div,
+        [data-testid="stFileUploaderDropzone"] span {
             color: #31333F !important;
         }
-        div[data-testid="stFileUploaderDropzone"] div {
-            color: #31333F !important;
-        }
-        section[data-testid="stFileUploader"] span {
-            color: #31333F !important;
-        }
-        
-        /* 5. BUTONLAR */
+
+        /* 6. BUTONLAR */
         div.stButton > button {
             background-color: #ffffff !important;
             color: #31333F !important;
@@ -101,43 +112,35 @@ st.markdown("""
         div.stButton > button:hover {
             border-color: #1C3768 !important;
             color: #1C3768 !important;
-            background-color: #f0f2f6 !important;
+            background-color: #eef0f4 !important;
         }
-        /* Primary Buton (Kırmızı/Analize Başla) */
+        /* Primary (Analize Başla) Butonu */
         div.stButton > button[kind="primary"] {
             background-color: #ff4b4b !important;
-            color: #ffffff !important; 
+            color: #ffffff !important;
             border: none !important;
         }
-        /* Primary Buton Hover */
         div.stButton > button[kind="primary"]:hover {
             background-color: #ff3333 !important;
-            color: #ffffff !important;
         }
+
+        /* 7. GENEL METİN RENKLERİ (Etiketler, Başlıklar) */
+        h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, div, span {
+            color: #31333F !important;
+        }
+
+        /* ================================================================= */
+        /* ÖZEL UYGULAMA STİLLERİ (Önceki Tasarımınız)                       */
+        /* ================================================================= */
         
-        /* 6. İKONLAR (SVG) - Dark modda beyaza dönen ikonları koyu yap */
-        svg {
-            fill: #555555 !important;
-            stroke: #555555 !important;
-        }
-        /* Özel landing icon istisnası */
-        .landing-icon {
-            font-size: 50px;
-            margin-bottom: 15px;
-            color: #31333F !important; 
-            fill: #31333F !important;
-        }
-
-        /* ================================================================= */
-        /* TEMA HARİCİ DİĞER CSS AYARLARI                                    */
-        /* ================================================================= */
-
-        /* Özel Class Renk Düzeltmeleri */
+        /* Özel renk istisnaları (Yukarıdaki genel siyah kuralını ezer) */
         .landing-title { color: #1C3768 !important; }
         .landing-text { color: #666666 !important; }
         .analiz-bilgi-deger { color: #111111 !important; }
         .analiz-bilgi-satir { color: #555555 !important; }
+        .stAlert div { color: inherit !important; } /* Uyarı kutuları kendi rengini korusun */
 
+        /* Layout Ayarları */
         section[data-testid="stSidebar"] div.block-container { padding-top: 1rem; }
         div.stButton > button { min-height: 50px; }
         
@@ -146,8 +149,8 @@ st.markdown("""
             background-color: #f8f9fa; border-radius: 8px; padding: 12px;
             border-left: 5px solid #1c3768; margin-top: 10px;
         }
-        .analiz-bilgi-satir { font-size: 0.9rem; color: #555; margin-bottom: 5px; line-height: 1.4; }
-        .analiz-bilgi-deger { font-weight: bold; color: #111; }
+        .analiz-bilgi-satir { font-size: 0.9rem; margin-bottom: 5px; line-height: 1.4; }
+        .analiz-bilgi-deger { font-weight: bold; }
         
         /* Floating Button (PDF) */
         .floating-pdf-container {
@@ -174,15 +177,17 @@ st.markdown("""
             transform: translateY(-5px);
             border: 1px solid #1C3768;
         }
-        
+        .landing-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+            color: #31333F !important;
+        }
         .landing-title {
             font-weight: bold;
-            color: #1C3768;
             margin-bottom: 10px;
             font-size: 18px;
         }
         .landing-text {
-            color: #666;
             font-size: 14px;
         }
         
@@ -193,7 +198,6 @@ st.markdown("""
             padding: 20px; 
             border-radius: 0 10px 10px 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            color: #444;
             line-height: 1.6;
             font-size: 14px;
             min-height: 140px; 
