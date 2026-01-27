@@ -23,7 +23,7 @@ except:
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
 # ==========================================
-# 1. CSS VE STİL AYARLARI (GÜÇLENDİRİLMİŞ LIGHT MODE + MAVİ BUTONLAR)
+# 1. CSS VE STİL AYARLARI (MAVİ BUTON & BEYAZ YAZI DÜZELTİLDİ)
 # ==========================================
 st.markdown("""
     <style>
@@ -31,9 +31,9 @@ st.markdown("""
         /* KESİN LIGHT MODE (AYDINLIK TEMA) ZORLAMA KODLARI                  */
         /* ================================================================= */
 
-        /* 1. KÖK DEĞİŞKENLERİ EZME (Streamlit'in renk hafızasını değiştirir) */
+        /* 1. KÖK DEĞİŞKENLERİ EZME */
         :root {
-            --primary-color: #1C3768; /* <-- DEĞİŞTİ: Kırmızı yerine Kurumsal Mavi */
+            --primary-color: #1C3768; 
             --background-color: #ffffff;
             --secondary-background-color: #f0f2f6;
             --text-color: #31333F;
@@ -52,13 +52,11 @@ st.markdown("""
             background-color: rgba(0,0,0,0) !important;
         }
 
-        /* 3. GİRİŞ KUTULARI VE SELECTBOX (SİYAHLAŞMAYI ÖNLER) */
-        /* Tüm inputların arka planını beyaza, yazısını siyaha zorla */
+        /* 3. GİRİŞ KUTULARI VE SELECTBOX */
         .stTextInput, .stNumberInput, .stSelectbox, .stDateInput {
             color: #31333F !important;
         }
         
-        /* Input kutularının iç yapısı (Uber Baseweb bileşenleri) */
         div[data-baseweb="base-input"],
         div[data-baseweb="select"] > div,
         div[data-baseweb="input"] {
@@ -68,26 +66,22 @@ st.markdown("""
             -webkit-text-fill-color: #31333F !important;
         }
 
-        /* Sayı ve Yazı giriş alanlarının kendisi */
         input[type="number"], input[type="text"] {
             background-color: #ffffff !important;
             color: #31333F !important;
             caret-color: #000000 !important;
         }
 
-        /* 4. AÇILIR MENÜ LİSTESİ (POPOVER) */
-        /* Seçenekler listesi açıldığında arka plan beyaz olsun */
+        /* 4. AÇILIR MENÜ LİSTESİ */
         div[data-baseweb="popover"],
         div[data-baseweb="menu"],
         ul[role="listbox"] {
             background-color: #ffffff !important;
         }
-        /* Listedeki seçeneklerin rengi */
         li[role="option"] {
             color: #31333F !important;
             background-color: #ffffff !important;
         }
-        /* Seçili eleman */
         div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
             color: #31333F !important;
         }
@@ -103,7 +97,7 @@ st.markdown("""
             color: #31333F !important;
         }
 
-        /* 6. BUTONLAR */
+        /* 6. BUTONLAR (Genel) */
         div.stButton > button {
             background-color: #ffffff !important;
             color: #31333F !important;
@@ -115,37 +109,46 @@ st.markdown("""
             background-color: #eef0f4 !important;
         }
         
-        /* --- DEĞİŞTİ: Primary (Analize Başla) Butonu MAVİ YAPILDI --- */
+        /* --- ÖZEL PRIMARY BUTON AYARI (DÜZELTİLDİ) --- */
+        /* Butonun kendisi mavi */
         div.stButton > button[kind="primary"] {
-            background-color: #1C3768 !important; /* Kurumsal Mavi */
-            color: #ffffff !important; /* Beyaz Yazı */
+            background-color: #1C3768 !important; 
             border: none !important;
         }
+        /* Butonun içindeki TÜM yazı elementlerini beyaza zorla */
+        div.stButton > button[kind="primary"] *, 
+        div.stButton > button[kind="primary"] p {
+            color: #ffffff !important;
+        }
+        
         div.stButton > button[kind="primary"]:hover {
-            background-color: #2A5298 !important; /* Üzerine gelince biraz daha açık mavi */
+            background-color: #2A5298 !important;
         }
 
         /* 7. GENEL METİN RENKLERİ (Etiketler, Başlıklar) */
+        /* Dikkat: Butonlar yukarıda özel olarak ayarlandığı için burası onları bozmaz */
         h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, div, span {
             color: #31333F !important;
         }
+        
+        /* Primary buton içindeki p etiketini tekrar korumaya al (Garanti olsun) */
+        button[kind="primary"] p {
+            color: #ffffff !important;
+        }
 
         /* ================================================================= */
-        /* ÖZEL UYGULAMA STİLLERİ (Önceki Tasarımınız)                       */
+        /* ÖZEL UYGULAMA STİLLERİ                                            */
         /* ================================================================= */
         
-        /* Özel renk istisnaları (Yukarıdaki genel siyah kuralını ezer) */
         .landing-title { color: #1C3768 !important; }
         .landing-text { color: #666666 !important; }
         .analiz-bilgi-deger { color: #111111 !important; }
         .analiz-bilgi-satir { color: #555555 !important; }
-        .stAlert div { color: inherit !important; } /* Uyarı kutuları kendi rengini korusun */
+        .stAlert div { color: inherit !important; }
 
-        /* Layout Ayarları */
         section[data-testid="stSidebar"] div.block-container { padding-top: 1rem; }
         div.stButton > button { min-height: 50px; }
         
-        /* Analiz Kutuları */
         .analiz-bilgi-kutu {
             background-color: #f8f9fa; border-radius: 8px; padding: 12px;
             border-left: 5px solid #1c3768; margin-top: 10px;
@@ -153,18 +156,15 @@ st.markdown("""
         .analiz-bilgi-satir { font-size: 0.9rem; margin-bottom: 5px; line-height: 1.4; }
         .analiz-bilgi-deger { font-weight: bold; }
         
-        /* Floating Button (PDF) */
         .floating-pdf-container {
             position: fixed; bottom: 30px; right: 30px; z-index: 9999;
             background-color: #ffffff; padding: 15px; border-radius: 12px;
             box-shadow: 0px 4px 15px rgba(0,0,0,0.2); border-top: 4px solid #1C3768; width: 250px;
         }
         
-        /* SCROLLBAR GİZLEME */
         section[data-testid="stSidebar"] ::-webkit-scrollbar { display: none; }
         section[data-testid="stSidebar"] { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* LANDING PAGE KARTLARI */
         .landing-card {
             background-color: #f8f9fa;
             border-radius: 15px;
@@ -192,7 +192,6 @@ st.markdown("""
             font-size: 14px;
         }
         
-        /* LANDING PAGE BIO KUTUSU */
         .landing-bio-box {
             background-color: #f8f9fa; 
             border-left: 4px solid #1C3768; 
