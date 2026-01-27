@@ -23,7 +23,7 @@ except:
 st.set_page_config(page_title="Alan Lazer Teklif Paneli", layout="wide", page_icon=fav_icon)
 
 # ==========================================
-# 1. CSS VE STİL AYARLARI (GÜÇLENDİRİLMİŞ LIGHT MODE)
+# 1. CSS VE STİL AYARLARI (GÜÇLENDİRİLMİŞ LIGHT MODE + MAVİ BUTONLAR)
 # ==========================================
 st.markdown("""
     <style>
@@ -33,7 +33,7 @@ st.markdown("""
 
         /* 1. KÖK DEĞİŞKENLERİ EZME (Streamlit'in renk hafızasını değiştirir) */
         :root {
-            --primary-color: #ff4b4b;
+            --primary-color: #1C3768; /* <-- DEĞİŞTİ: Kırmızı yerine Kurumsal Mavi */
             --background-color: #ffffff;
             --secondary-background-color: #f0f2f6;
             --text-color: #31333F;
@@ -114,14 +114,15 @@ st.markdown("""
             color: #1C3768 !important;
             background-color: #eef0f4 !important;
         }
-        /* Primary (Analize Başla) Butonu */
+        
+        /* --- DEĞİŞTİ: Primary (Analize Başla) Butonu MAVİ YAPILDI --- */
         div.stButton > button[kind="primary"] {
-            background-color: #ff4b4b !important;
-            color: #ffffff !important;
+            background-color: #1C3768 !important; /* Kurumsal Mavi */
+            color: #ffffff !important; /* Beyaz Yazı */
             border: none !important;
         }
         div.stButton > button[kind="primary"]:hover {
-            background-color: #ff3333 !important;
+            background-color: #2A5298 !important; /* Üzerine gelince biraz daha açık mavi */
         }
 
         /* 7. GENEL METİN RENKLERİ (Etiketler, Başlıklar) */
