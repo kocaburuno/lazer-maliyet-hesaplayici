@@ -477,7 +477,7 @@ def landing_page():
     st.write("") 
     
     # Başlık (Yukarı çekildi: margin-top: -20px)
-    st.markdown("<h1 style='text-align: center; color: #1C3768; margin-top: -20px;'>Profesyonel Lazer ve Büküm Maliyet Analizi</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #1C3768; margin-top: -20px;'>Lazer ve Büküm Maliyet Analizi</h1>", unsafe_allow_html=True)
     st.divider()
     
     # Bilgi Kartları
